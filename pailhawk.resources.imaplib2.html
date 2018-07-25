@@ -1,1104 +1,501 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
-<html><head><title>Python: module pailhawk.resources.imaplib2</title>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-</head><body bgcolor="#f0f0f8">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
 
-<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
-<tr bgcolor="#7799ee">
-<td valign=bottom>&nbsp;<br>
-<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="pailhawk.html"><font color="#ffffff">pailhawk</font></a>.<a href="pailhawk.resources.html"><font color="#ffffff">resources</font></a>.imaplib2</strong></big></big> (version 3.05)</font></td
-><td align=right valign=bottom
-><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/home/ezra/Documents/python_exercises/pailhawk/resources/imaplib2.py">/home/ezra/Documents/python_exercises/pailhawk/resources/imaplib2.py</a></font></td></tr></table>
-    <p><tt>Threaded&nbsp;<a href="#IMAP4">IMAP4</a>&nbsp;client&nbsp;for&nbsp;Python&nbsp;3.<br>
-&nbsp;<br>
-Based&nbsp;on&nbsp;<a href="http://www.rfc-editor.org/rfc/rfc3501.txt">RFC&nbsp;3501</a>&nbsp;and&nbsp;original&nbsp;imaplib&nbsp;module.<br>
-&nbsp;<br>
-Public&nbsp;classes:&nbsp;&nbsp;&nbsp;<a href="#IMAP4">IMAP4</a><br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#IMAP4_SSL">IMAP4_SSL</a><br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="#IMAP4_stream">IMAP4_stream</a><br>
-&nbsp;<br>
-Public&nbsp;functions:&nbsp;Internaldate2Time<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ParseFlags<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Time2Internaldate</tt></p>
+<HEAD>
+<TITLE>Threaded IMAP4rev1 client</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+<H3>Python threaded IMAP4 client module <code>imaplib2</code></H3>
+
+<p>This module defines a class, <code>IMAP4</code>,
+which encapsulates a threaded connection to an <small>IMAP4</small> server
+and implements the <small>IMAP4</small>rev1 client protocol
+as defined in <small>RFC</small> 3501 with several extensions.
+This module presents an almost identical API
+as that provided by the standard python library module <code>imaplib</code>,
+the main difference being that this version
+allows parallel execution of commands on the <small>IMAP4</small> server,
+and implements the <small>IMAP4</small>rev1 <code>IDLE</code> extension.
+(<code>imaplib2</code> can be substituted for <code>imaplib</code>
+in existing clients with no changes in the code, but see the <i>caveat</i> below.)
+
+<p>An <code>IMAP4</code> instance is instantiated with an optional <code>host</code>
+and/or <code>port</code>. The defaults are <code>localhost</code> and <code>143</code>
+- the standard <small>IMAP4</small> port number.</p>
+
+<p>There are also five other optional arguments:
+<code>debug=level, debug_file=file, identifier=string, timeout=seconds, debug_buf_lvl=level</code>.
+Setting <code>debug</code> <i>level</i> (default: 0) to anything above <code>debug_buf_lvl</code> (default: 3)
+causes every action to be printed to <i>file</i> (default: <i>sys.stderr</i>).
+Otherwise actions are logged in a circular buffer and the last 20 printed on errors.
+The third argument provides a string to be prepended to thread names - useful during debugging (default: target host).
+The forth argument sets a timeout for responses from the server, after which the instance will abort.
+Note that this timeout is overridden by an IDLE timeout when active.
+</p>
+
 <p>
-<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
-<tr bgcolor="#aa55cc">
-<td colspan=3 valign=bottom>&nbsp;<br>
-<font color="#ffffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
-    
-<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="binascii.html">binascii</a><br>
-<a href="calendar.html">calendar</a><br>
-<a href="errno.html">errno</a><br>
-<a href="os.html">os</a><br>
-</td><td width="25%" valign=top><a href="queue.html">queue</a><br>
-<a href="random.html">random</a><br>
-<a href="re.html">re</a><br>
-<a href="select.html">select</a><br>
-</td><td width="25%" valign=top><a href="select.html">select</a><br>
-<a href="socket.html">socket</a><br>
-<a href="sys.html">sys</a><br>
-<a href="threading.html">threading</a><br>
-</td><td width="25%" valign=top><a href="time.html">time</a><br>
-<a href="zlib.html">zlib</a><br>
-</td></tr></table></td></tr></table><p>
-<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
-<tr bgcolor="#ee77aa">
-<td colspan=3 valign=bottom>&nbsp;<br>
-<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
-    
-<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><dl>
-<dt><font face="helvetica, arial"><a href="builtins.html#object">builtins.object</a>
-</font></dt><dd>
+<b>Caveat</b>: Once an instance has been created,
+the invoker must call the <code>logout</code> method before discarding it, to shut down the threads.
+</p>
+
+<p>There are two classes derived from <code>IMAP4</code>
+which provide alternate transport mechanisms:</p>
+
+<DL>
+
+<DT><code>IMAP4_SSL</code></DT>
+<DD><small>IMAP4</small> client class over an SSL connection.</DD>
+
+<DT><code>IMAP4_stream</code></DT>
+<DD><small>IMAP4</small> client class over a stream.</DD>
+
+</DL>
+
+<p>There are also 2 utility methods provided for processing <small>IMAP4</small> date strings:</p>
+
+<DL>
+
+<DT><code>Internaldate2Time</code>(<I>datestr</I>)</DT>
+<DD>Converts an <small>IMAP4</small> <code>INTERNALDATE</code> string to Universal Time.
+Returns a <code>time</code> module tuple.</DD>
+
+<DT><code>Time2Internaldate</code>(<I>date_time</I>)</DT>
+<DD>Converts <code>date_time</code>
+(a <code>time</code> module tuple,
+or an integer or float seconds)
+to an <small>IMAP4</small> <code>INTERNALDATE</code> representation.
+Returns a string in the form:<BR><code>"DD-Mmm-YYYY HH:MM:SS +HHMM"</code>
+(including double-quotes).</DD>
+
+</DL>
+
+<p>And there is one utility method for parsing <small>IMAP4</small> <code>FLAGS</code> responses:</p>
+
+<DL>
+
+<DT><code>ParseFlags</code>(<I>response</I>)</DT>
+<DD>Convert an <small>IMAP4</small> flags response
+(a string of the form <code>"...FLAGS (flag ...)"</code>)
+to a python tuple..</DD>
+
+</DL>
+
+<H5>IMAP4 Objects</H5>
+
+<p>All <small>IMAP4</small>rev1 commands are represented by methods of the same name</p>
+
+<p>Each command returns a tuple: <code>(type, [data, ...])</code>
+where <code>type</code> is usually <code>'OK'</code> or <code>'NO'</code>,
+and <code>data</code> is either the
+text from the command response
+(always true when <code>type</code> is <code>'NO'</code>),
+or mandated results from the command.
+Each <code>data</code> is either a string, or a tuple.
+If a tuple, then the first part is the
+header of the response, and the second part contains the data (ie: <i>literal</i> value).</p>
+
+<p>Any logical errors raise the exception class
+<code>&lt;instance&gt;.error("&lt;reason&gt;")</code>.
+<small>IMAP4</small> server errors raise <code>&lt;instance&gt;.abort("&lt;reason&gt;")</code>,
+which is a sub-class of <code>error</code>.
+Mailbox status changes from <code>READ-WRITE</code> to <code>READ-ONLY</code>
+raise <code>&lt;instance&gt;.readonly("&lt;reason&gt;")</code>,
+which is a sub-class of <code>abort</code>.
+Note that closing the instance and instantiating a new one
+will usually recover from an <code>abort</code>.</p>
+
+<p>
+All commands take two optional named arguments:
+<code>callback</code> and <code>cb_arg</code>.
+If <code>callback</code> is provided then the command is asynchronous
+(the <small>IMAP4</small> command is scheduled, and the call returns immediately),
+and the result will be posted by invoking <code>callback</code> with a single argument:
+<UL>
+<code>callback(((type, [data, ...]), cb_arg, None))</code>
+</UL>
+or, if there was a problem:
+<UL>
+<code>callback((None, cb_arg, (exception class, reason)))</code>.
+</UL>
+</p>
+
+<p>
+Otherwise the command is synchronous (waits for result). But note
+that state-changing commands will both block until previous commands have completed,
+and block subsequent commands until they have finished.
+</p>
+
+<p>All (non-callback) arguments to commands are converted to bytes,
+except for <code>authenticate</code>,
+and the last argument to <code>append</code> which is passed as an <small>IMAP4</small> literal.
+NB: the <I>password</I> argument to the <code>login</code> command is always quoted.</p>
+
+<p>If you want to avoid having an argument string quoted
+(eg: the <i>flags</i> argument to <code>store</code>)
+then enclose the string in parentheses (eg: <code>(\Deleted)</code>).
+If you are using <I>sequence sets</I>
+containing the wildcard character '*', then enclose the argument
+in single quotes: the quotes will be removed and the resulting
+string passed unquoted.</p>
+
+<p>To summarise the quoting rules:
+<ul>
+<li>a string is automatically quoted if it contains at least one of the
+<mall>IMAP4</small> <I>atom-special</I> characters with the following exceptions:
+<li>the password argument to the <code>login</code> command is always quoted;
+<li>a string enclosed in <code>"..."</code> or <code>(...)</code> is passed as is;
+<li>a string enclosed in <code>'...'</code> is stripped of the enclosing single
+quotes and the rest passed as is.
+</ul>
+
+<p>Note also that you can pass in an argument with a type that doesn't evaluate to <i>basestring</i>
+(eg: <code>bytearray</code>) and it will be converted to a string without quoting.</p>
+
+<p>There is one instance variable, <code>state</code>, that is useful for tracking
+whether the client needs to login to the server. If it has the
+value <code>"AUTH"</code> after instantiating the class, then the connection
+is pre-authenticated (otherwise it will be <code>"NONAUTH"</code>). Selecting a
+mailbox changes the state to be <code>"SELECTED"</code>, closing a mailbox changes
+back to <code>"AUTH"</code>, and once the client has logged out, the state changes
+to <code>"LOGOUT"</code> and no further commands may be issued.</p>
+
+<p>There is another instance variable, <code>capabilities</code>,
+that holds a list of the capabilities provided by the server (the
+same as the list returned by the <small>IMAP4</small> <code>CAPABILITY</code> command).
+
+
+<p>An <code>IMAP4</code> instance has the following methods:</p>
+
+<DL>
+
+<DT><code>append</code>(<I>mailbox, flags, date_time, message</I>)</DT>
+<DD>Append message to named mailbox.
+All args except <code>message</code> can be None</DD>
+
+<br>
+<DT><code>authenticate</code>(<I>mechanism, authobject</I>)</DT>
+<DD>Authenticate command - requires response processing.
+<BR>
+<I>mechanism</I> specifies which authentication mechanism is to
+be used - it must appear in <code>&lt;instance&gt;.capabilities</code> in the
+form <code>AUTH=</code><I>mechanism</I>.
+<BR>
+<I>authobject</I> must be a callable object:
+<UL>
+<code>data = authobject(response)</code>
+</UL>
+It will be called to process server continuation responses,
+the 'response' argument will be a 'bytes'.
+It should return bytes that will be encoded and sent to the server.
+It should return None if the client abort response <code>*</code> should
+be sent instead.</DD>
+
+<br>
+<DT><code>capability</code>()</DT>
+<DD>Return server <small>IMAP4</small> capabilities.</DD>
+
+<br>
+<DT><code>check</code>()</DT>
+<DD>Checkpoint mailbox on server.</DD>
+
+<br>
+<DT><code>close</code>()</DT>
+<DD>Close currently selected mailbox.
+
+Deleted messages are removed from writable mailbox.
+This is the recommended command before <small>LOGOUT</small>.</DD>
+
+<br>
+<DT><code>copy</code>(<I>message_set, new_mailbox</I>)</DT>
+<DD>Copy <I>message_set</I> messages onto end of <I>new_mailbox</I>.</DD>
+
+<br>
+<DT><code>create</code>(<I>mailbox</I>)</DT>
+<DD>Create new mailbox.</DD>
+
+<br>
+<DT><code>delete</code>(<I>mailbox</I>)</DT>
+<DD>Delete old mailbox.</DD>
+
+<br>
+<DT><code>enable</code>(<I>capability</I>)</DT>
+<DD>Send an RFC5161 enable string to the server.
+EG: ask the server to enable UTF-8 message encoding:
+<PRE>
+	if 'ENABLE' in imapobj.capabilities:
+		imapobj.enable("UTF8=ACCEPT")
+</PRE>
+</DD>
+
+<br>
+<DT><code>enable_compression</code>()</DT>
+<DD>Ask the server to start compressing the connection.
+Should be called from user of this class after instantiation, as in:
+<PRE>
+	if 'COMPRESS=DEFLATE' in imapobj.capabilities:
+		imapobj.enable_compression()
+</PRE>
+</DD>
+
+<br>
+<DT><code>examine</code>(<I>mailbox</I>='INBOX')</DT>
+<DD>Select a mailbox for <small>READ-ONLY</small> access.
+Flush all untagged responses.
+Returned <I>data</I> is count of messages in mailbox (EXISTS response).
+Mandated responses are <code>'FLAGS', 'EXISTS', 'RECENT', 'UIDVALIDITY'</code>,
+so other responses should be obtained by calling <code>response('FLAGS')</code> etc.</DD>
+
+<br>
+<DT><code>expunge</code>()</DT>
+<DD>Permanently remove deleted items from selected mailbox.
+Generates an <small>EXPUNGE</small> response for each deleted message.
+Returned <I>data</I> contains a list of <small>EXPUNGE</small> message numbers in order received.</DD>
+
+<br>
+<DT><code>fetch</code>(<I>message_set, message_parts</I>)</DT>
+<DD>Fetch (parts of) messages.
+<code>message_parts</code> should be a string of selected parts
+enclosed in parentheses, eg: <code>"(UID BODY[TEXT])"</code>.
+Returned <i>data</i> are tuples of message part envelope and data,
+followed by a string containing the trailer.</DD>
+
+<br>
+<DT><code>getacl</code>(<I>mailbox</I>)</DT>
+<DD>Get the Access Control Lists for a mailbox.</DD>
+
+<br>
+<DT><code>getannotation</code>(<I>mailbox_name, entry_specifier, attribute_specifier</I>)</DT>
+<DD>Retrieve ANNOTATIONS.</DD>
+
+<br>
+<DT><code>getquota</code>(<I>root</I>)</DT>
+<DD>Get the quota root's resource usage and limits.
+(Part of the <small>IMAP4 QUOTA</small> extension defined in RFC2087.)</DD>
+
+<br>
+<DT><code>getquotaroot</code>(<I>mailbox</I>)</DT>
+<DD>Get the list of quota roots for the named mailbox.</DD>
+
+<br>
+<DT><code>id</code>(<i>field1, value1, ...</i>)</DT>
+<DD>IMAP4 <small>ID</small> extension:
+exchange information for problem analysis and determination.
+NB: a single argument is assumed to be correctly formatted and is passed through unchanged
+(for backward compatibility with earlier version).
+The ID extension is defined in RFC 2971.</DD>
+
+<br>
+<DT><code>idle</code>(<i>timeout=</i><code>None</code>)</DT>
+<DD>Put server into <small>IDLE</small> mode
+until server notifies some change,
+or <i>timeout</i> (secs) occurs [default: 29 minutes],
+or another <small>IMAP4</small> command is scheduled.</DD>
+
+<br>
+<DT><code>list</code>(<I>directory=</I><code>'""'</code><I>, pattern=</I><code>'*'</code>)</DT>
+<DD>List mailbox names in directory matching pattern.
+Returned <i>data</i> is list of <small>LIST</small> responses.</DD>
+
+<br>
+<DT><code>login</code>(<I>user, password</I>)</DT>
+<DD>Identify client using plaintext password.
+The <I>password</I> argument will be quoted.</DD>
+
+<br>
+<DT><code>login_cram_md5</code>(<I>user, password</I>)</DT>
+<DD>Force use of <small>CRAM-MD5</small> authentication.</DD>
+
+<br>
+<DT><code>logout</code>()</DT>
+<DD>Shutdown connection to server.
+Returns server BYE response.
+NB: You must call this to shut down threads before discarding an instance.</DD>
+
+<br>
+<DT><code>lsub</code>(<I>directory</I>=<code>'""'</code>, <I>pattern</I>=<code>'*'</code>)</DT>
+<DD>List <I>subscribed</I> mailbox names in directory matching pattern.
+Returned <I>data</I> are tuples of message part envelope and data.</DD>
+
+<br>
+<DT><code>myrights</code>(<i>mailbox</i>)</DT>
+<DD>Show my Access Controll Lists for <i>mailbox</i>
+(i.e. the rights that I have on <i>mailbox</i>).</DD>
+
+<br>
+<DT><code>namespace</code>()</DT>
+<DD>Returns <small>IMAP</small> namespaces per RFC2342.</DD>
+
+<br>
+<DT><code>noop</code>()</DT>
+<DD>Send <small>NOOP</small> command.</DD>
+
+<br>
+<DT><code>partial</code>(<I>message_num, message_part, start, length</I>)</DT>
+<DD>Fetch truncated part of a message.
+Returned <I>data</I> is tuple of message part envelope and data. NB: obsolete.</DD>
+
+<br>
+<DT><code>pop_untagged_responses</code>()</DT>
+<DD>(Helper method.)
+Generator for obtaining untagged responses.
+Returns and removes untagged responses in order of reception.
+Use at your own risk!
+(Removing untagged responses required by outstanding commands may cause errors.)</DD>
+
+<br>
+<DT><code>proxyauth</code>(<I>user</I>)</DT>
+<DD>Assume authentication as <i>user</i>.
+(Allows an authorised administrator to proxy into any user's mailbox.)</DD>
+
+<br>
+<DT><code>recent</code>()</DT>
+<DD>(Helper method.)
+Return <small>RECENT</small> responses if any exist,
+else prompt server for an update using the <small>NOOP</small> command.
+Returned <I>data</I> is <code>None</code> if no new messages,
+else list of <small>RECENT</small> responses, most recent last.</DD>
+
+<br>
+<DT><code>rename</code>(<I>oldmailbox, newmailbox</I>)</DT>
+<DD>Rename old mailbox name to new.</DD>
+
+<br>
+<DT><code>response</code>(<I>code</I>)</DT>
+<DD>(Helper method.)
+Return data for response <I>code</I> if received, or None.
+Response value is cleared.
+Returns the given <I>code</I> in place of the usual <I>type.</I></DD>
+
+<br>
+<DT><code>search</code>(<I>charset, criterium, ...</I>)</DT>
+<DD>Search mailbox for matching messages.
+Returned <I>data</I> contains a space separated list of matching message numbers.</DD>
+
+<br>
+<DT><code>select</code>(<I>mailbox</I>='INBOX', <I>readonly</I>=False)</DT>
+<DD>Select a mailbox.
+Flush all untagged responses.
+Returned <I>data</I> is count of messages in mailbox (EXISTS response).
+Mandated responses are <code>'FLAGS', 'EXISTS', 'RECENT', 'UIDVALIDITY'</code>,
+so other responses should be obtained by calling <code>response('FLAGS')</code> etc.</DD>
+
+<br>
+<DT><code>setacl</code>(<I>mailbox, who, what</I>)</DT>
+<DD>Set the Access Control Lists for a mailbox.</DD>
+
+<br>
+<DT><code>setannotation</code>(<I>mailbox_name, entry, attribute_value[, entry, attribute_value]*</I>)</DT>
+<DD>Set ANNOTATIONS.</DD>
+
+<br>
+<DT><code>setquota</code>(<I>root, limits</I>)</DT>
+<DD>Set the quota root's resource limits.</DD>
+
+<br>
+<DT><code>sort</code>(<I>sort_criteria, charset, search_criteria, ...</I>)</DT>
+<DD><small>IMAP4</small>rev1 extension <small>SORT</small> command.</DD>
+
+<br>
+<DT><code>starttls</code>(<I>keyfile</I>, <I>certfile</I>, <I>ca_certs</I>, <I>cert_verify_cb</I>, <I>ssl_version</I>="ssl23", <I>tls_level</I>="tls_compat")</DT>
+<DD>Start TLS negotiation as per RFC 2595.
+If non-null, <I>cert_verify_cb</I> will be called to verify the server certificate,
+with peer certificate and hostname as parameters.
+If <I>cert_verify_cb</I> returns a non-null response, an SSL exception will be raised with the response as reason.
+<code>starttls</code> should be called from user of the <SMALL>IMAP4</SMALL> class after instantiation, as in:
+<PRE>
+	if 'STARTTLS' in imapobj.capabilities:
+		imapobj.starttls()
+</PRE>
+
+<p>
+The recognized values for <code>tls_level</code> are:
 <dl>
-<dt><font face="helvetica, arial"><a href="pailhawk.resources.imaplib2.html#IMAP4">IMAP4</a>
-</font></dt><dd>
-<dl>
-<dt><font face="helvetica, arial"><a href="pailhawk.resources.imaplib2.html#IMAP4_SSL">IMAP4_SSL</a>
-</font></dt><dt><font face="helvetica, arial"><a href="pailhawk.resources.imaplib2.html#IMAP4_stream">IMAP4_stream</a>
-</font></dt></dl>
-</dd>
+<dd><i>tls_secure</i>: accept only TLS protocols recognized as "secure"
+<dd><i>tls_no_ssl</i>: disable SSLv2 and SSLv3 support
+<dd><i>tls_compat</i>: accept all SSL/TLS versions
 </dl>
-</dd>
-</dl>
- <p>
-<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
-<tr bgcolor="#ffc8d8">
-<td colspan=3 valign=bottom>&nbsp;<br>
-<font color="#000000" face="helvetica, arial"><a name="IMAP4">class <strong>IMAP4</strong></a>(<a href="builtins.html#object">builtins.object</a>)</font></td></tr>
-    
-<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
-<td colspan=2><tt>Threaded&nbsp;<a href="#IMAP4">IMAP4</a>&nbsp;client&nbsp;class.<br>
-&nbsp;<br>
-Instantiate&nbsp;with:<br>
-&nbsp;&nbsp;&nbsp;&nbsp;<a href="#IMAP4">IMAP4</a>(host=None,&nbsp;port=None,&nbsp;debug=None,&nbsp;debug_file=None,&nbsp;identifier=None,&nbsp;timeout=None,&nbsp;debug_buf_lvl=None)<br>
-&nbsp;<br>
-&nbsp;&nbsp;&nbsp;&nbsp;host&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;host's&nbsp;name&nbsp;(default:&nbsp;localhost);<br>
-&nbsp;&nbsp;&nbsp;&nbsp;port&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;port&nbsp;number&nbsp;(default:&nbsp;standard&nbsp;<a href="#IMAP4">IMAP4</a>&nbsp;port);<br>
-&nbsp;&nbsp;&nbsp;&nbsp;debug&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;debug&nbsp;level&nbsp;(default:&nbsp;0&nbsp;-&nbsp;no&nbsp;debug);<br>
-&nbsp;&nbsp;&nbsp;&nbsp;debug_file&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;debug&nbsp;stream&nbsp;(default:&nbsp;sys.stderr);<br>
-&nbsp;&nbsp;&nbsp;&nbsp;identifier&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;thread&nbsp;identifier&nbsp;prefix&nbsp;(default:&nbsp;host);<br>
-&nbsp;&nbsp;&nbsp;&nbsp;timeout&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;timeout&nbsp;in&nbsp;seconds&nbsp;when&nbsp;expecting&nbsp;a&nbsp;command&nbsp;response&nbsp;(default:&nbsp;no&nbsp;timeout),<br>
-&nbsp;&nbsp;&nbsp;&nbsp;debug_buf_lvl&nbsp;-&nbsp;debug&nbsp;level&nbsp;at&nbsp;which&nbsp;buffering&nbsp;is&nbsp;turned&nbsp;off.<br>
-&nbsp;<br>
-All&nbsp;IMAP4rev1&nbsp;commands&nbsp;are&nbsp;supported&nbsp;by&nbsp;methods&nbsp;of&nbsp;the&nbsp;same&nbsp;name.<br>
-&nbsp;<br>
-Each&nbsp;command&nbsp;returns&nbsp;a&nbsp;tuple:&nbsp;(type,&nbsp;[data,&nbsp;...])&nbsp;where&nbsp;'type'<br>
-is&nbsp;usually&nbsp;'OK'&nbsp;or&nbsp;'NO',&nbsp;and&nbsp;'data'&nbsp;is&nbsp;either&nbsp;the&nbsp;text&nbsp;from&nbsp;the<br>
-tagged&nbsp;response,&nbsp;or&nbsp;untagged&nbsp;results&nbsp;from&nbsp;command.&nbsp;Each&nbsp;'data'&nbsp;is<br>
-either&nbsp;a&nbsp;string,&nbsp;or&nbsp;a&nbsp;tuple.&nbsp;If&nbsp;a&nbsp;tuple,&nbsp;then&nbsp;the&nbsp;first&nbsp;part&nbsp;is&nbsp;the<br>
-header&nbsp;of&nbsp;the&nbsp;response,&nbsp;and&nbsp;the&nbsp;second&nbsp;part&nbsp;contains&nbsp;the&nbsp;data&nbsp;(ie:<br>
-'literal'&nbsp;value).<br>
-&nbsp;<br>
-Errors&nbsp;raise&nbsp;the&nbsp;exception&nbsp;class&nbsp;&lt;instance&gt;.<a href="#IMAP4-error">error</a>("&lt;reason&gt;").<br>
-<a href="#IMAP4">IMAP4</a>&nbsp;server&nbsp;errors&nbsp;raise&nbsp;&lt;instance&gt;.<a href="#IMAP4-abort">abort</a>("&lt;reason&gt;"),&nbsp;which&nbsp;is<br>
-a&nbsp;sub-class&nbsp;of&nbsp;'error'.&nbsp;Mailbox&nbsp;status&nbsp;changes&nbsp;from&nbsp;READ-WRITE&nbsp;to<br>
-READ-ONLY&nbsp;raise&nbsp;the&nbsp;exception&nbsp;class&nbsp;&lt;instance&gt;.<a href="#IMAP4-readonly">readonly</a>("&lt;reason&gt;"),<br>
-which&nbsp;is&nbsp;a&nbsp;sub-class&nbsp;of&nbsp;'abort'.<br>
-&nbsp;<br>
-"error"&nbsp;exceptions&nbsp;imply&nbsp;a&nbsp;program&nbsp;error.<br>
-"abort"&nbsp;exceptions&nbsp;imply&nbsp;the&nbsp;connection&nbsp;should&nbsp;be&nbsp;reset,&nbsp;and<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;the&nbsp;command&nbsp;re-tried.<br>
-"readonly"&nbsp;exceptions&nbsp;imply&nbsp;the&nbsp;command&nbsp;should&nbsp;be&nbsp;re-tried.<br>
-&nbsp;<br>
-All&nbsp;commands&nbsp;take&nbsp;two&nbsp;optional&nbsp;named&nbsp;arguments:<br>
-&nbsp;&nbsp;&nbsp;&nbsp;'callback'&nbsp;and&nbsp;'cb_arg'<br>
-If&nbsp;'callback'&nbsp;is&nbsp;provided&nbsp;then&nbsp;the&nbsp;command&nbsp;is&nbsp;asynchronous,&nbsp;so&nbsp;after<br>
-the&nbsp;command&nbsp;is&nbsp;queued&nbsp;for&nbsp;transmission,&nbsp;the&nbsp;call&nbsp;returns&nbsp;immediately<br>
-with&nbsp;the&nbsp;tuple&nbsp;(None,&nbsp;None).<br>
-The&nbsp;result&nbsp;will&nbsp;be&nbsp;posted&nbsp;by&nbsp;invoking&nbsp;"callback"&nbsp;with&nbsp;one&nbsp;arg,&nbsp;a&nbsp;tuple:<br>
-&nbsp;&nbsp;&nbsp;&nbsp;callback((result,&nbsp;cb_arg,&nbsp;None))<br>
-or,&nbsp;if&nbsp;there&nbsp;was&nbsp;a&nbsp;problem:<br>
-&nbsp;&nbsp;&nbsp;&nbsp;callback((None,&nbsp;cb_arg,&nbsp;(exception&nbsp;class,&nbsp;reason)))<br>
-&nbsp;<br>
-Otherwise&nbsp;the&nbsp;command&nbsp;is&nbsp;synchronous&nbsp;(waits&nbsp;for&nbsp;result).&nbsp;But&nbsp;note<br>
-that&nbsp;state-changing&nbsp;commands&nbsp;will&nbsp;both&nbsp;block&nbsp;until&nbsp;previous&nbsp;commands<br>
-have&nbsp;completed,&nbsp;and&nbsp;block&nbsp;subsequent&nbsp;commands&nbsp;until&nbsp;they&nbsp;have&nbsp;finished.<br>
-&nbsp;<br>
-All&nbsp;(non-callback)&nbsp;string&nbsp;arguments&nbsp;to&nbsp;commands&nbsp;are&nbsp;converted&nbsp;to&nbsp;bytes,<br>
-except&nbsp;for&nbsp;AUTHENTICATE,&nbsp;and&nbsp;the&nbsp;last&nbsp;argument&nbsp;to&nbsp;APPEND&nbsp;which&nbsp;is<br>
-passed&nbsp;as&nbsp;an&nbsp;<a href="#IMAP4">IMAP4</a>&nbsp;literal.&nbsp;&nbsp;NB:&nbsp;the&nbsp;'password'&nbsp;argument&nbsp;to&nbsp;the&nbsp;LOGIN<br>
-command&nbsp;is&nbsp;always&nbsp;quoted.<br>
-&nbsp;<br>
-There&nbsp;is&nbsp;one&nbsp;instance&nbsp;variable,&nbsp;'state',&nbsp;that&nbsp;is&nbsp;useful&nbsp;for&nbsp;tracking<br>
-whether&nbsp;the&nbsp;client&nbsp;needs&nbsp;to&nbsp;login&nbsp;to&nbsp;the&nbsp;server.&nbsp;If&nbsp;it&nbsp;has&nbsp;the<br>
-value&nbsp;"AUTH"&nbsp;after&nbsp;instantiating&nbsp;the&nbsp;class,&nbsp;then&nbsp;the&nbsp;connection<br>
-is&nbsp;pre-authenticated&nbsp;(otherwise&nbsp;it&nbsp;will&nbsp;be&nbsp;"NONAUTH").&nbsp;Selecting&nbsp;a<br>
-mailbox&nbsp;changes&nbsp;the&nbsp;state&nbsp;to&nbsp;be&nbsp;"SELECTED",&nbsp;closing&nbsp;a&nbsp;mailbox&nbsp;changes<br>
-back&nbsp;to&nbsp;"AUTH",&nbsp;and&nbsp;once&nbsp;the&nbsp;client&nbsp;has&nbsp;logged&nbsp;out,&nbsp;the&nbsp;state&nbsp;changes<br>
-to&nbsp;"LOGOUT"&nbsp;and&nbsp;no&nbsp;further&nbsp;commands&nbsp;may&nbsp;be&nbsp;issued.<br>
-&nbsp;<br>
-Note:&nbsp;to&nbsp;use&nbsp;this&nbsp;module,&nbsp;you&nbsp;must&nbsp;read&nbsp;the&nbsp;RFCs&nbsp;pertaining&nbsp;to&nbsp;the<br>
-<a href="#IMAP4">IMAP4</a>&nbsp;protocol,&nbsp;as&nbsp;the&nbsp;semantics&nbsp;of&nbsp;the&nbsp;arguments&nbsp;to&nbsp;each&nbsp;<a href="#IMAP4">IMAP4</a><br>
-command&nbsp;are&nbsp;left&nbsp;to&nbsp;the&nbsp;invoker,&nbsp;not&nbsp;to&nbsp;mention&nbsp;the&nbsp;results.&nbsp;Also,<br>
-most&nbsp;IMAP&nbsp;servers&nbsp;implement&nbsp;a&nbsp;sub-set&nbsp;of&nbsp;the&nbsp;commands&nbsp;available&nbsp;here.<br>
-&nbsp;<br>
-Note&nbsp;also&nbsp;that&nbsp;you&nbsp;must&nbsp;call&nbsp;<a href="#IMAP4-logout">logout</a>()&nbsp;to&nbsp;shut&nbsp;down&nbsp;threads&nbsp;before<br>
-discarding&nbsp;an&nbsp;instance.<br>&nbsp;</tt></td></tr>
-<tr><td>&nbsp;</td>
-<td width="100%">Methods defined here:<br>
-<dl><dt><a name="IMAP4-__enter__"><strong>__enter__</strong></a>(self)</dt></dl>
-
-<dl><dt><a name="IMAP4-__exit__"><strong>__exit__</strong></a>(self, *args)</dt></dl>
-
-<dl><dt><a name="IMAP4-__getattr__"><strong>__getattr__</strong></a>(self, attr)</dt></dl>
-
-<dl><dt><a name="IMAP4-__init__"><strong>__init__</strong></a>(self, host=None, port=None, debug=None, debug_file=None, identifier=None, timeout=None, debug_buf_lvl=None)</dt><dd><tt>Initialize&nbsp;self.&nbsp;&nbsp;See&nbsp;help(type(self))&nbsp;for&nbsp;accurate&nbsp;signature.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-append"><strong>append</strong></a>(self, mailbox, flags, date_time, message, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-append">append</a>(mailbox,&nbsp;flags,&nbsp;date_time,&nbsp;message)<br>
-Append&nbsp;message&nbsp;to&nbsp;named&nbsp;mailbox.<br>
-All&nbsp;args&nbsp;except&nbsp;`message'&nbsp;can&nbsp;be&nbsp;None.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-authenticate"><strong>authenticate</strong></a>(self, mechanism, authobject, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-authenticate">authenticate</a>(mechanism,&nbsp;authobject)<br>
-Authenticate&nbsp;command&nbsp;-&nbsp;requires&nbsp;response&nbsp;processing.<br>
-&nbsp;<br>
-'mechanism'&nbsp;specifies&nbsp;which&nbsp;authentication&nbsp;mechanism&nbsp;is&nbsp;to<br>
-be&nbsp;used&nbsp;-&nbsp;it&nbsp;must&nbsp;appear&nbsp;in&nbsp;&lt;instance&gt;.capabilities&nbsp;in&nbsp;the<br>
-form&nbsp;AUTH=&lt;mechanism&gt;.<br>
-&nbsp;<br>
-'authobject'&nbsp;must&nbsp;be&nbsp;a&nbsp;callable&nbsp;<a href="builtins.html#object">object</a>:<br>
-&nbsp;<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;data&nbsp;=&nbsp;authobject(response)<br>
-&nbsp;<br>
-It&nbsp;will&nbsp;be&nbsp;called&nbsp;to&nbsp;process&nbsp;server&nbsp;continuation&nbsp;responses,<br>
-the&nbsp;'response'&nbsp;argument&nbsp;will&nbsp;be&nbsp;a&nbsp;'bytes'.&nbsp;&nbsp;It&nbsp;should&nbsp;return<br>
-bytes&nbsp;that&nbsp;will&nbsp;be&nbsp;encoded&nbsp;and&nbsp;sent&nbsp;to&nbsp;server.&nbsp;&nbsp;It&nbsp;should<br>
-return&nbsp;None&nbsp;if&nbsp;the&nbsp;client&nbsp;abort&nbsp;response&nbsp;'*'&nbsp;should&nbsp;be&nbsp;sent<br>
-instead.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-capability"><strong>capability</strong></a>(self, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-capability">capability</a>()<br>
-Fetch&nbsp;capabilities&nbsp;list&nbsp;from&nbsp;server.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-check"><strong>check</strong></a>(self, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-check">check</a>()<br>
-Checkpoint&nbsp;mailbox&nbsp;on&nbsp;server.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-close"><strong>close</strong></a>(self, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-close">close</a>()<br>
-Close&nbsp;currently&nbsp;selected&nbsp;mailbox.<br>
-&nbsp;<br>
-Deleted&nbsp;messages&nbsp;are&nbsp;removed&nbsp;from&nbsp;writable&nbsp;mailbox.<br>
-This&nbsp;is&nbsp;the&nbsp;recommended&nbsp;command&nbsp;before&nbsp;'LOGOUT'.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-copy"><strong>copy</strong></a>(self, message_set, new_mailbox, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-copy">copy</a>(message_set,&nbsp;new_mailbox)<br>
-Copy&nbsp;'message_set'&nbsp;messages&nbsp;onto&nbsp;end&nbsp;of&nbsp;'new_mailbox'.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-create"><strong>create</strong></a>(self, mailbox, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-create">create</a>(mailbox)<br>
-Create&nbsp;new&nbsp;mailbox.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-delete"><strong>delete</strong></a>(self, mailbox, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-delete">delete</a>(mailbox)<br>
-Delete&nbsp;old&nbsp;mailbox.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-deleteacl"><strong>deleteacl</strong></a>(self, mailbox, who, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-deleteacl">deleteacl</a>(mailbox,&nbsp;who)<br>
-Delete&nbsp;the&nbsp;ACLs&nbsp;(remove&nbsp;any&nbsp;rights)&nbsp;set&nbsp;for&nbsp;who&nbsp;on&nbsp;mailbox.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-enable"><strong>enable</strong></a>(self, capability)</dt><dd><tt>Send&nbsp;an&nbsp;<a href="http://www.rfc-editor.org/rfc/rfc5161.txt">RFC5161</a>&nbsp;enable&nbsp;string&nbsp;to&nbsp;the&nbsp;server.<br>
-&nbsp;<br>
-(typ,&nbsp;[data])&nbsp;=&nbsp;&lt;intance&gt;.<a href="#IMAP4-enable">enable</a>(capability)</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-enable_compression"><strong>enable_compression</strong></a>(self)</dt><dd><tt><a href="#IMAP4-enable_compression">enable_compression</a>()<br>
-Ask&nbsp;the&nbsp;server&nbsp;to&nbsp;start&nbsp;compressing&nbsp;the&nbsp;connection.<br>
-Should&nbsp;be&nbsp;called&nbsp;from&nbsp;user&nbsp;of&nbsp;this&nbsp;class&nbsp;after&nbsp;instantiation,&nbsp;as&nbsp;in:<br>
-&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;'COMPRESS=DEFLATE'&nbsp;in&nbsp;imapobj.capabilities:<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;imapobj.<a href="#IMAP4-enable_compression">enable_compression</a>()</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-examine"><strong>examine</strong></a>(self, mailbox='INBOX', **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-examine">examine</a>(mailbox='INBOX')<br>
-Select&nbsp;a&nbsp;mailbox&nbsp;for&nbsp;READ-ONLY&nbsp;access.&nbsp;(Flushes&nbsp;all&nbsp;untagged&nbsp;responses.)<br>
-'data'&nbsp;is&nbsp;count&nbsp;of&nbsp;messages&nbsp;in&nbsp;mailbox&nbsp;('EXISTS'&nbsp;response).<br>
-Mandated&nbsp;responses&nbsp;are&nbsp;('FLAGS',&nbsp;'EXISTS',&nbsp;'RECENT',&nbsp;'UIDVALIDITY'),&nbsp;so<br>
-other&nbsp;responses&nbsp;should&nbsp;be&nbsp;obtained&nbsp;via&nbsp;"<a href="#IMAP4-response">response</a>('FLAGS')"&nbsp;etc.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-expunge"><strong>expunge</strong></a>(self, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-expunge">expunge</a>()<br>
-Permanently&nbsp;remove&nbsp;deleted&nbsp;items&nbsp;from&nbsp;selected&nbsp;mailbox.<br>
-Generates&nbsp;'EXPUNGE'&nbsp;response&nbsp;for&nbsp;each&nbsp;deleted&nbsp;message.<br>
-'data'&nbsp;is&nbsp;list&nbsp;of&nbsp;'EXPUNGE'd&nbsp;message&nbsp;numbers&nbsp;in&nbsp;order&nbsp;received.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-fetch"><strong>fetch</strong></a>(self, message_set, message_parts, **kw)</dt><dd><tt>(typ,&nbsp;[data,&nbsp;...])&nbsp;=&nbsp;<a href="#IMAP4-fetch">fetch</a>(message_set,&nbsp;message_parts)<br>
-Fetch&nbsp;(parts&nbsp;of)&nbsp;messages.<br>
-'message_parts'&nbsp;should&nbsp;be&nbsp;a&nbsp;string&nbsp;of&nbsp;selected&nbsp;parts<br>
-enclosed&nbsp;in&nbsp;parentheses,&nbsp;eg:&nbsp;"(UID&nbsp;BODY[TEXT])".<br>
-'data'&nbsp;are&nbsp;tuples&nbsp;of&nbsp;message&nbsp;part&nbsp;envelope&nbsp;and&nbsp;data,<br>
-followed&nbsp;by&nbsp;a&nbsp;string&nbsp;containing&nbsp;the&nbsp;trailer.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-getacl"><strong>getacl</strong></a>(self, mailbox, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-getacl">getacl</a>(mailbox)<br>
-Get&nbsp;the&nbsp;ACLs&nbsp;for&nbsp;a&nbsp;mailbox.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-getannotation"><strong>getannotation</strong></a>(self, mailbox, entry, attribute, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-getannotation">getannotation</a>(mailbox,&nbsp;entry,&nbsp;attribute)<br>
-Retrieve&nbsp;ANNOTATIONs.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-getquota"><strong>getquota</strong></a>(self, root, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-getquota">getquota</a>(root)<br>
-Get&nbsp;the&nbsp;quota&nbsp;root's&nbsp;resource&nbsp;usage&nbsp;and&nbsp;limits.<br>
-(Part&nbsp;of&nbsp;the&nbsp;<a href="#IMAP4">IMAP4</a>&nbsp;QUOTA&nbsp;extension&nbsp;defined&nbsp;in&nbsp;rfc2087.)</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-getquotaroot"><strong>getquotaroot</strong></a>(self, mailbox, **kw)</dt><dd><tt>(typ,&nbsp;[[QUOTAROOT&nbsp;responses...],&nbsp;[QUOTA&nbsp;responses...]])&nbsp;=&nbsp;<a href="#IMAP4-getquotaroot">getquotaroot</a>(mailbox)<br>
-Get&nbsp;the&nbsp;list&nbsp;of&nbsp;quota&nbsp;roots&nbsp;for&nbsp;the&nbsp;named&nbsp;mailbox.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-id"><strong>id</strong></a>(self, *kv_pairs, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;&lt;instance&gt;.<a href="#IMAP4-id">id</a>(kv_pairs)<br>
-'kv_pairs'&nbsp;is&nbsp;a&nbsp;possibly&nbsp;empty&nbsp;list&nbsp;of&nbsp;keys&nbsp;and&nbsp;values.<br>
-'data'&nbsp;is&nbsp;a&nbsp;list&nbsp;of&nbsp;ID&nbsp;key&nbsp;value&nbsp;pairs&nbsp;or&nbsp;NIL.<br>
-NB:&nbsp;a&nbsp;single&nbsp;argument&nbsp;is&nbsp;assumed&nbsp;to&nbsp;be&nbsp;correctly&nbsp;formatted&nbsp;and&nbsp;is&nbsp;passed&nbsp;through&nbsp;unchanged<br>
-(for&nbsp;backward&nbsp;compatibility&nbsp;with&nbsp;earlier&nbsp;version).<br>
-Exchange&nbsp;information&nbsp;for&nbsp;problem&nbsp;analysis&nbsp;and&nbsp;determination.<br>
-The&nbsp;ID&nbsp;extension&nbsp;is&nbsp;defined&nbsp;in&nbsp;<a href="http://www.rfc-editor.org/rfc/rfc2971.txt">RFC&nbsp;2971</a>.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-idle"><strong>idle</strong></a>(self, timeout=None, **kw)</dt><dd><tt>"(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-idle">idle</a>(timeout=None)<br>
-Put&nbsp;server&nbsp;into&nbsp;IDLE&nbsp;mode&nbsp;until&nbsp;server&nbsp;notifies&nbsp;some&nbsp;change,<br>
-or&nbsp;'timeout'&nbsp;(secs)&nbsp;occurs&nbsp;(default:&nbsp;29&nbsp;minutes),<br>
-or&nbsp;another&nbsp;<a href="#IMAP4">IMAP4</a>&nbsp;command&nbsp;is&nbsp;scheduled.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-list"><strong>list</strong></a>(self, directory='""', pattern='*', **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-list">list</a>(directory='""',&nbsp;pattern='*')<br>
-List&nbsp;mailbox&nbsp;names&nbsp;in&nbsp;directory&nbsp;matching&nbsp;pattern.<br>
-'data'&nbsp;is&nbsp;list&nbsp;of&nbsp;LIST&nbsp;responses.<br>
-&nbsp;<br>
-NB:&nbsp;for&nbsp;'pattern':<br>
-%&nbsp;matches&nbsp;all&nbsp;except&nbsp;separator&nbsp;(&nbsp;so&nbsp;LIST&nbsp;""&nbsp;"%"&nbsp;returns&nbsp;names&nbsp;at&nbsp;root)<br>
-*&nbsp;matches&nbsp;all&nbsp;(so&nbsp;LIST&nbsp;""&nbsp;"*"&nbsp;returns&nbsp;whole&nbsp;directory&nbsp;tree&nbsp;from&nbsp;root)</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-login"><strong>login</strong></a>(self, user, password, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-login">login</a>(user,&nbsp;password)<br>
-Identify&nbsp;client&nbsp;using&nbsp;plaintext&nbsp;password.<br>
-NB:&nbsp;'password'&nbsp;will&nbsp;be&nbsp;quoted.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-login_cram_md5"><strong>login_cram_md5</strong></a>(self, user, password, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-login_cram_md5">login_cram_md5</a>(user,&nbsp;password)<br>
-Force&nbsp;use&nbsp;of&nbsp;CRAM-MD5&nbsp;authentication.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-logout"><strong>logout</strong></a>(self, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-logout">logout</a>()<br>
-Shutdown&nbsp;connection&nbsp;to&nbsp;server.<br>
-Returns&nbsp;server&nbsp;'BYE'&nbsp;response.<br>
-NB:&nbsp;You&nbsp;must&nbsp;call&nbsp;this&nbsp;to&nbsp;shut&nbsp;down&nbsp;threads&nbsp;before&nbsp;discarding&nbsp;an&nbsp;instance.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-lsub"><strong>lsub</strong></a>(self, directory='""', pattern='*', **kw)</dt><dd><tt>(typ,&nbsp;[data,&nbsp;...])&nbsp;=&nbsp;<a href="#IMAP4-lsub">lsub</a>(directory='""',&nbsp;pattern='*')<br>
-List&nbsp;'subscribed'&nbsp;mailbox&nbsp;names&nbsp;in&nbsp;directory&nbsp;matching&nbsp;pattern.<br>
-'data'&nbsp;are&nbsp;tuples&nbsp;of&nbsp;message&nbsp;part&nbsp;envelope&nbsp;and&nbsp;data.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-myrights"><strong>myrights</strong></a>(self, mailbox, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-myrights">myrights</a>(mailbox)<br>
-Show&nbsp;my&nbsp;ACLs&nbsp;for&nbsp;a&nbsp;mailbox&nbsp;(i.e.&nbsp;the&nbsp;rights&nbsp;that&nbsp;I&nbsp;have&nbsp;on&nbsp;mailbox).</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-namespace"><strong>namespace</strong></a>(self, **kw)</dt><dd><tt>(typ,&nbsp;[data,&nbsp;...])&nbsp;=&nbsp;<a href="#IMAP4-namespace">namespace</a>()<br>
-Returns&nbsp;IMAP&nbsp;namespaces&nbsp;ala&nbsp;rfc2342.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-noop"><strong>noop</strong></a>(self, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-noop">noop</a>()<br>
-Send&nbsp;NOOP&nbsp;command.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-open"><strong>open</strong></a>(self, host=None, port=None)</dt><dd><tt><a href="#IMAP4-open">open</a>(host=None,&nbsp;port=None)<br>
-Setup&nbsp;connection&nbsp;to&nbsp;remote&nbsp;server&nbsp;on&nbsp;"host:port"<br>
-&nbsp;&nbsp;&nbsp;&nbsp;(default:&nbsp;localhost:standard&nbsp;<a href="#IMAP4">IMAP4</a>&nbsp;port).<br>
-This&nbsp;connection&nbsp;will&nbsp;be&nbsp;used&nbsp;by&nbsp;the&nbsp;routines:<br>
-&nbsp;&nbsp;&nbsp;&nbsp;read,&nbsp;send,&nbsp;shutdown,&nbsp;socket.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-open_socket"><strong>open_socket</strong></a>(self)</dt><dd><tt><a href="#IMAP4-open_socket">open_socket</a>()<br>
-Open&nbsp;socket&nbsp;choosing&nbsp;first&nbsp;address&nbsp;family&nbsp;available.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-partial"><strong>partial</strong></a>(self, message_num, message_part, start, length, **kw)</dt><dd><tt>(typ,&nbsp;[data,&nbsp;...])&nbsp;=&nbsp;<a href="#IMAP4-partial">partial</a>(message_num,&nbsp;message_part,&nbsp;start,&nbsp;length)<br>
-Fetch&nbsp;truncated&nbsp;part&nbsp;of&nbsp;a&nbsp;message.<br>
-'data'&nbsp;is&nbsp;tuple&nbsp;of&nbsp;message&nbsp;part&nbsp;envelope&nbsp;and&nbsp;data.<br>
-NB:&nbsp;obsolete.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-pop_untagged_responses"><strong>pop_untagged_responses</strong></a>(self)</dt><dd><tt>for&nbsp;typ,data&nbsp;in&nbsp;<a href="#IMAP4-pop_untagged_responses">pop_untagged_responses</a>():&nbsp;pass<br>
-Generator&nbsp;for&nbsp;any&nbsp;remaining&nbsp;untagged&nbsp;responses.<br>
-Returns&nbsp;and&nbsp;removes&nbsp;untagged&nbsp;responses&nbsp;in&nbsp;order&nbsp;of&nbsp;reception.<br>
-Use&nbsp;at&nbsp;your&nbsp;own&nbsp;risk!</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-proxyauth"><strong>proxyauth</strong></a>(self, user, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-proxyauth">proxyauth</a>(user)<br>
-Assume&nbsp;authentication&nbsp;as&nbsp;'user'.<br>
-(Allows&nbsp;an&nbsp;authorised&nbsp;administrator&nbsp;to&nbsp;proxy&nbsp;into&nbsp;any&nbsp;user's&nbsp;mailbox.)</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-read"><strong>read</strong></a>(self, size)</dt><dd><tt>data&nbsp;=&nbsp;<a href="#IMAP4-read">read</a>(size)<br>
-Read&nbsp;at&nbsp;most&nbsp;'size'&nbsp;bytes&nbsp;from&nbsp;remote.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-recent"><strong>recent</strong></a>(self, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-recent">recent</a>()<br>
-Return&nbsp;'RECENT'&nbsp;responses&nbsp;if&nbsp;any&nbsp;exist,<br>
-else&nbsp;prompt&nbsp;server&nbsp;for&nbsp;an&nbsp;update&nbsp;using&nbsp;the&nbsp;'NOOP'&nbsp;command.<br>
-'data'&nbsp;is&nbsp;None&nbsp;if&nbsp;no&nbsp;new&nbsp;messages,<br>
-else&nbsp;list&nbsp;of&nbsp;RECENT&nbsp;responses,&nbsp;most&nbsp;recent&nbsp;last.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-rename"><strong>rename</strong></a>(self, oldmailbox, newmailbox, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-rename">rename</a>(oldmailbox,&nbsp;newmailbox)<br>
-Rename&nbsp;old&nbsp;mailbox&nbsp;name&nbsp;to&nbsp;new.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-response"><strong>response</strong></a>(self, code, **kw)</dt><dd><tt>(code,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-response">response</a>(code)<br>
-Return&nbsp;data&nbsp;for&nbsp;response&nbsp;'code'&nbsp;if&nbsp;received,&nbsp;or&nbsp;None.<br>
-Old&nbsp;value&nbsp;for&nbsp;response&nbsp;'code'&nbsp;is&nbsp;cleared.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-search"><strong>search</strong></a>(self, charset, *criteria, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-search">search</a>(charset,&nbsp;criterion,&nbsp;...)<br>
-Search&nbsp;mailbox&nbsp;for&nbsp;matching&nbsp;messages.<br>
-If&nbsp;UTF8&nbsp;is&nbsp;enabled,&nbsp;charset&nbsp;MUST&nbsp;be&nbsp;None.<br>
-'data'&nbsp;is&nbsp;space&nbsp;separated&nbsp;list&nbsp;of&nbsp;matching&nbsp;message&nbsp;numbers.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-select"><strong>select</strong></a>(self, mailbox='INBOX', readonly=False, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-select">select</a>(mailbox='INBOX',&nbsp;readonly=False)<br>
-Select&nbsp;a&nbsp;mailbox.&nbsp;(Flushes&nbsp;all&nbsp;untagged&nbsp;responses.)<br>
-'data'&nbsp;is&nbsp;count&nbsp;of&nbsp;messages&nbsp;in&nbsp;mailbox&nbsp;('EXISTS'&nbsp;response).<br>
-Mandated&nbsp;responses&nbsp;are&nbsp;('FLAGS',&nbsp;'EXISTS',&nbsp;'RECENT',&nbsp;'UIDVALIDITY'),&nbsp;so<br>
-other&nbsp;responses&nbsp;should&nbsp;be&nbsp;obtained&nbsp;via&nbsp;"<a href="#IMAP4-response">response</a>('FLAGS')"&nbsp;etc.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-send"><strong>send</strong></a>(self, data)</dt><dd><tt><a href="#IMAP4-send">send</a>(data)<br>
-Send&nbsp;'data'&nbsp;to&nbsp;remote.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-setacl"><strong>setacl</strong></a>(self, mailbox, who, what, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-setacl">setacl</a>(mailbox,&nbsp;who,&nbsp;what)<br>
-Set&nbsp;a&nbsp;mailbox&nbsp;acl.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-setannotation"><strong>setannotation</strong></a>(self, *args, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-setannotation">setannotation</a>(mailbox[,&nbsp;entry,&nbsp;attribute]+)<br>
-Set&nbsp;ANNOTATIONs.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-setquota"><strong>setquota</strong></a>(self, root, limits, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-setquota">setquota</a>(root,&nbsp;limits)<br>
-Set&nbsp;the&nbsp;quota&nbsp;root's&nbsp;resource&nbsp;limits.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-shutdown"><strong>shutdown</strong></a>(self)</dt><dd><tt><a href="#IMAP4-shutdown">shutdown</a>()<br>
-Close&nbsp;I/O&nbsp;established&nbsp;in&nbsp;"open".</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-socket"><strong>socket</strong></a>(self)</dt><dd><tt>socket&nbsp;=&nbsp;<a href="#IMAP4-socket">socket</a>()<br>
-Return&nbsp;socket&nbsp;instance&nbsp;used&nbsp;to&nbsp;connect&nbsp;to&nbsp;<a href="#IMAP4">IMAP4</a>&nbsp;server.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-sort"><strong>sort</strong></a>(self, sort_criteria, charset, *search_criteria, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-sort">sort</a>(sort_criteria,&nbsp;charset,&nbsp;search_criteria,&nbsp;...)<br>
-IMAP4rev1&nbsp;extension&nbsp;SORT&nbsp;command.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-ssl_wrap_socket"><strong>ssl_wrap_socket</strong></a>(self)</dt></dl>
-
-<dl><dt><a name="IMAP4-start_compressing"><strong>start_compressing</strong></a>(self)</dt><dd><tt><a href="#IMAP4-start_compressing">start_compressing</a>()<br>
-Enable&nbsp;deflate&nbsp;compression&nbsp;on&nbsp;the&nbsp;socket&nbsp;(<a href="http://www.rfc-editor.org/rfc/rfc4978.txt">RFC&nbsp;4978</a>).</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-starttls"><strong>starttls</strong></a>(self, keyfile=None, certfile=None, ca_certs=None, cert_verify_cb=None, ssl_version='ssl23', tls_level='tls_compat', **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-starttls">starttls</a>(keyfile=None,&nbsp;certfile=None,&nbsp;ca_certs=None,&nbsp;cert_verify_cb=None,&nbsp;ssl_version="ssl23",&nbsp;tls_level="tls_compat")<br>
-Start&nbsp;TLS&nbsp;negotiation&nbsp;as&nbsp;per&nbsp;<a href="http://www.rfc-editor.org/rfc/rfc2595.txt">RFC&nbsp;2595</a>.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-status"><strong>status</strong></a>(self, mailbox, names, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-status">status</a>(mailbox,&nbsp;names)<br>
-Request&nbsp;named&nbsp;status&nbsp;conditions&nbsp;for&nbsp;mailbox.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-store"><strong>store</strong></a>(self, message_set, command, flags, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-store">store</a>(message_set,&nbsp;command,&nbsp;flags)<br>
-Alters&nbsp;flag&nbsp;dispositions&nbsp;for&nbsp;messages&nbsp;in&nbsp;mailbox.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-subscribe"><strong>subscribe</strong></a>(self, mailbox, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-subscribe">subscribe</a>(mailbox)<br>
-Subscribe&nbsp;to&nbsp;new&nbsp;mailbox.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-thread"><strong>thread</strong></a>(self, threading_algorithm, charset, *search_criteria, **kw)</dt><dd><tt>(type,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-thread">thread</a>(threading_alogrithm,&nbsp;charset,&nbsp;search_criteria,&nbsp;...)<br>
-IMAPrev1&nbsp;extension&nbsp;THREAD&nbsp;command.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-uid"><strong>uid</strong></a>(self, command, *args, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-uid">uid</a>(command,&nbsp;arg,&nbsp;...)<br>
-Execute&nbsp;"command&nbsp;arg&nbsp;..."&nbsp;with&nbsp;messages&nbsp;identified&nbsp;by&nbsp;UID,<br>
-&nbsp;&nbsp;&nbsp;&nbsp;rather&nbsp;than&nbsp;message&nbsp;number.<br>
-Assumes&nbsp;'command'&nbsp;is&nbsp;legal&nbsp;in&nbsp;current&nbsp;state.<br>
-Returns&nbsp;response&nbsp;appropriate&nbsp;to&nbsp;'command'.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-unsubscribe"><strong>unsubscribe</strong></a>(self, mailbox, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-unsubscribe">unsubscribe</a>(mailbox)<br>
-Unsubscribe&nbsp;from&nbsp;old&nbsp;mailbox.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4-xatom"><strong>xatom</strong></a>(self, name, *args, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4-xatom">xatom</a>(name,&nbsp;arg,&nbsp;...)<br>
-Allow&nbsp;simple&nbsp;extension&nbsp;commands&nbsp;notified&nbsp;by&nbsp;server&nbsp;in&nbsp;CAPABILITY&nbsp;response.<br>
-Assumes&nbsp;extension&nbsp;command&nbsp;'name'&nbsp;is&nbsp;legal&nbsp;in&nbsp;current&nbsp;state.<br>
-Returns&nbsp;response&nbsp;appropriate&nbsp;to&nbsp;extension&nbsp;command&nbsp;'name'.</tt></dd></dl>
-
-<hr>
-Data descriptors defined here:<br>
-<dl><dt><strong>__dict__</strong></dt>
-<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
-</dl>
-<dl><dt><strong>__weakref__</strong></dt>
-<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
-</dl>
-<hr>
-Data and other attributes defined here:<br>
-<dl><dt><strong>abort</strong> = &lt;class 'pailhawk.resources.imaplib2.IMAP4.abort'&gt;</dl>
-
-<dl><dt><strong>continuation_cre</strong> = re.compile(b'\\+( (?P&lt;data&gt;.*))?')</dl>
-
-<dl><dt><strong>error</strong> = &lt;class 'pailhawk.resources.imaplib2.IMAP4.error'&gt;</dl>
-
-<dl><dt><strong>mapCRLF_cre</strong> = re.compile(b'\\r\\n|\\r|\\n')</dl>
-
-<dl><dt><strong>readonly</strong> = &lt;class 'pailhawk.resources.imaplib2.IMAP4.readonly'&gt;</dl>
-
-<dl><dt><strong>response_code_cre</strong> = re.compile(b'\\[(?P&lt;type&gt;[A-Z-]+)( (?P&lt;data&gt;[^\\]]*))?\\]')</dl>
-
-<dl><dt><strong>untagged_response_cre</strong> = re.compile(b'\\* (?P&lt;type&gt;[A-Z-]+)( (?P&lt;data&gt;.*))?')</dl>
-
-</td></tr></table> <p>
-<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
-<tr bgcolor="#ffc8d8">
-<td colspan=3 valign=bottom>&nbsp;<br>
-<font color="#000000" face="helvetica, arial"><a name="IMAP4_SSL">class <strong>IMAP4_SSL</strong></a>(<a href="pailhawk.resources.imaplib2.html#IMAP4">IMAP4</a>)</font></td></tr>
-    
-<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
-<td colspan=2><tt><a href="#IMAP4">IMAP4</a>&nbsp;client&nbsp;class&nbsp;over&nbsp;SSL&nbsp;connection<br>
-&nbsp;<br>
-Instantiate&nbsp;with:<br>
-&nbsp;&nbsp;&nbsp;&nbsp;<a href="#IMAP4_SSL">IMAP4_SSL</a>(host=None,&nbsp;port=None,&nbsp;keyfile=None,&nbsp;certfile=None,&nbsp;ca_certs=None,&nbsp;cert_verify_cb=None,&nbsp;ssl_version="ssl23",&nbsp;debug=None,&nbsp;debug_file=None,&nbsp;identifier=None,&nbsp;timeout=None,&nbsp;debug_buf_lvl=None,&nbsp;tls_level="tls_compat")<br>
-&nbsp;<br>
-&nbsp;&nbsp;&nbsp;&nbsp;host&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;host's&nbsp;name&nbsp;(default:&nbsp;localhost);<br>
-&nbsp;&nbsp;&nbsp;&nbsp;port&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;port&nbsp;number&nbsp;(default:&nbsp;standard&nbsp;<a href="#IMAP4">IMAP4</a>&nbsp;SSL&nbsp;port);<br>
-&nbsp;&nbsp;&nbsp;&nbsp;keyfile&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;PEM&nbsp;formatted&nbsp;file&nbsp;that&nbsp;contains&nbsp;your&nbsp;private&nbsp;key&nbsp;(default:&nbsp;None);<br>
-&nbsp;&nbsp;&nbsp;&nbsp;certfile&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;PEM&nbsp;formatted&nbsp;certificate&nbsp;chain&nbsp;file&nbsp;(default:&nbsp;None);<br>
-&nbsp;&nbsp;&nbsp;&nbsp;ca_certs&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;PEM&nbsp;formatted&nbsp;certificate&nbsp;chain&nbsp;file&nbsp;used&nbsp;to&nbsp;validate&nbsp;server&nbsp;certificates&nbsp;(default:&nbsp;None);<br>
-&nbsp;&nbsp;&nbsp;&nbsp;cert_verify_cb&nbsp;-&nbsp;function&nbsp;to&nbsp;verify&nbsp;authenticity&nbsp;of&nbsp;server&nbsp;certificates&nbsp;(default:&nbsp;None);<br>
-&nbsp;&nbsp;&nbsp;&nbsp;ssl_version&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;SSL&nbsp;version&nbsp;to&nbsp;use&nbsp;(default:&nbsp;"ssl23",&nbsp;choose&nbsp;from:&nbsp;"tls1","ssl3","ssl23");<br>
-&nbsp;&nbsp;&nbsp;&nbsp;debug&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;debug&nbsp;level&nbsp;(default:&nbsp;0&nbsp;-&nbsp;no&nbsp;debug);<br>
-&nbsp;&nbsp;&nbsp;&nbsp;debug_file&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;debug&nbsp;stream&nbsp;(default:&nbsp;sys.stderr);<br>
-&nbsp;&nbsp;&nbsp;&nbsp;identifier&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;thread&nbsp;identifier&nbsp;prefix&nbsp;(default:&nbsp;host);<br>
-&nbsp;&nbsp;&nbsp;&nbsp;timeout&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;timeout&nbsp;in&nbsp;seconds&nbsp;when&nbsp;expecting&nbsp;a&nbsp;command&nbsp;response.<br>
-&nbsp;&nbsp;&nbsp;&nbsp;debug_buf_lvl&nbsp;&nbsp;-&nbsp;debug&nbsp;level&nbsp;at&nbsp;which&nbsp;buffering&nbsp;is&nbsp;turned&nbsp;off.<br>
-&nbsp;&nbsp;&nbsp;&nbsp;tls_level&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;TLS&nbsp;security&nbsp;level&nbsp;(default:&nbsp;"tls_compat").<br>
-&nbsp;<br>
-The&nbsp;recognized&nbsp;values&nbsp;for&nbsp;tls_level&nbsp;are:<br>
-&nbsp;&nbsp;&nbsp;&nbsp;tls_secure:&nbsp;accept&nbsp;only&nbsp;TLS&nbsp;protocols&nbsp;recognized&nbsp;as&nbsp;"secure"<br>
-&nbsp;&nbsp;&nbsp;&nbsp;tls_no_ssl:&nbsp;disable&nbsp;SSLv2&nbsp;and&nbsp;SSLv3&nbsp;support<br>
-&nbsp;&nbsp;&nbsp;&nbsp;tls_compat:&nbsp;accept&nbsp;all&nbsp;SSL/TLS&nbsp;versions<br>
-&nbsp;<br>
-For&nbsp;more&nbsp;documentation&nbsp;see&nbsp;the&nbsp;docstring&nbsp;of&nbsp;the&nbsp;parent&nbsp;class&nbsp;<a href="#IMAP4">IMAP4</a>.<br>&nbsp;</tt></td></tr>
-<tr><td>&nbsp;</td>
-<td width="100%"><dl><dt>Method resolution order:</dt>
-<dd><a href="pailhawk.resources.imaplib2.html#IMAP4_SSL">IMAP4_SSL</a></dd>
-<dd><a href="pailhawk.resources.imaplib2.html#IMAP4">IMAP4</a></dd>
-<dd><a href="builtins.html#object">builtins.object</a></dd>
-</dl>
-<hr>
-Methods defined here:<br>
-<dl><dt><a name="IMAP4_SSL-__init__"><strong>__init__</strong></a>(self, host=None, port=None, keyfile=None, certfile=None, ca_certs=None, cert_verify_cb=None, ssl_version='ssl23', debug=None, debug_file=None, identifier=None, timeout=None, debug_buf_lvl=None, tls_level='tls_compat')</dt><dd><tt>Initialize&nbsp;self.&nbsp;&nbsp;See&nbsp;help(type(self))&nbsp;for&nbsp;accurate&nbsp;signature.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-open"><strong>open</strong></a>(self, host=None, port=None)</dt><dd><tt><a href="#IMAP4_SSL-open">open</a>(host=None,&nbsp;port=None)<br>
-Setup&nbsp;secure&nbsp;connection&nbsp;to&nbsp;remote&nbsp;server&nbsp;on&nbsp;"host:port"<br>
-&nbsp;&nbsp;&nbsp;&nbsp;(default:&nbsp;localhost:standard&nbsp;<a href="#IMAP4">IMAP4</a>&nbsp;SSL&nbsp;port).<br>
-This&nbsp;connection&nbsp;will&nbsp;be&nbsp;used&nbsp;by&nbsp;the&nbsp;routines:<br>
-&nbsp;&nbsp;&nbsp;&nbsp;read,&nbsp;send,&nbsp;shutdown,&nbsp;socket,&nbsp;ssl.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-read"><strong>read</strong></a>(self, size)</dt><dd><tt>data&nbsp;=&nbsp;<a href="#IMAP4_SSL-read">read</a>(size)<br>
-Read&nbsp;at&nbsp;most&nbsp;'size'&nbsp;bytes&nbsp;from&nbsp;remote.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-send"><strong>send</strong></a>(self, data)</dt><dd><tt><a href="#IMAP4_SSL-send">send</a>(data)<br>
-Send&nbsp;'data'&nbsp;to&nbsp;remote.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-ssl"><strong>ssl</strong></a>(self)</dt><dd><tt>ssl&nbsp;=&nbsp;<a href="#IMAP4_SSL-ssl">ssl</a>()<br>
-Return&nbsp;ssl&nbsp;instance&nbsp;used&nbsp;to&nbsp;communicate&nbsp;with&nbsp;the&nbsp;<a href="#IMAP4">IMAP4</a>&nbsp;server.</tt></dd></dl>
-
-<hr>
-Methods inherited from <a href="pailhawk.resources.imaplib2.html#IMAP4">IMAP4</a>:<br>
-<dl><dt><a name="IMAP4_SSL-__enter__"><strong>__enter__</strong></a>(self)</dt></dl>
-
-<dl><dt><a name="IMAP4_SSL-__exit__"><strong>__exit__</strong></a>(self, *args)</dt></dl>
-
-<dl><dt><a name="IMAP4_SSL-__getattr__"><strong>__getattr__</strong></a>(self, attr)</dt></dl>
-
-<dl><dt><a name="IMAP4_SSL-append"><strong>append</strong></a>(self, mailbox, flags, date_time, message, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-append">append</a>(mailbox,&nbsp;flags,&nbsp;date_time,&nbsp;message)<br>
-Append&nbsp;message&nbsp;to&nbsp;named&nbsp;mailbox.<br>
-All&nbsp;args&nbsp;except&nbsp;`message'&nbsp;can&nbsp;be&nbsp;None.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-authenticate"><strong>authenticate</strong></a>(self, mechanism, authobject, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-authenticate">authenticate</a>(mechanism,&nbsp;authobject)<br>
-Authenticate&nbsp;command&nbsp;-&nbsp;requires&nbsp;response&nbsp;processing.<br>
-&nbsp;<br>
-'mechanism'&nbsp;specifies&nbsp;which&nbsp;authentication&nbsp;mechanism&nbsp;is&nbsp;to<br>
-be&nbsp;used&nbsp;-&nbsp;it&nbsp;must&nbsp;appear&nbsp;in&nbsp;&lt;instance&gt;.capabilities&nbsp;in&nbsp;the<br>
-form&nbsp;AUTH=&lt;mechanism&gt;.<br>
-&nbsp;<br>
-'authobject'&nbsp;must&nbsp;be&nbsp;a&nbsp;callable&nbsp;<a href="builtins.html#object">object</a>:<br>
-&nbsp;<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;data&nbsp;=&nbsp;authobject(response)<br>
-&nbsp;<br>
-It&nbsp;will&nbsp;be&nbsp;called&nbsp;to&nbsp;process&nbsp;server&nbsp;continuation&nbsp;responses,<br>
-the&nbsp;'response'&nbsp;argument&nbsp;will&nbsp;be&nbsp;a&nbsp;'bytes'.&nbsp;&nbsp;It&nbsp;should&nbsp;return<br>
-bytes&nbsp;that&nbsp;will&nbsp;be&nbsp;encoded&nbsp;and&nbsp;sent&nbsp;to&nbsp;server.&nbsp;&nbsp;It&nbsp;should<br>
-return&nbsp;None&nbsp;if&nbsp;the&nbsp;client&nbsp;abort&nbsp;response&nbsp;'*'&nbsp;should&nbsp;be&nbsp;sent<br>
-instead.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-capability"><strong>capability</strong></a>(self, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-capability">capability</a>()<br>
-Fetch&nbsp;capabilities&nbsp;list&nbsp;from&nbsp;server.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-check"><strong>check</strong></a>(self, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-check">check</a>()<br>
-Checkpoint&nbsp;mailbox&nbsp;on&nbsp;server.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-close"><strong>close</strong></a>(self, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-close">close</a>()<br>
-Close&nbsp;currently&nbsp;selected&nbsp;mailbox.<br>
-&nbsp;<br>
-Deleted&nbsp;messages&nbsp;are&nbsp;removed&nbsp;from&nbsp;writable&nbsp;mailbox.<br>
-This&nbsp;is&nbsp;the&nbsp;recommended&nbsp;command&nbsp;before&nbsp;'LOGOUT'.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-copy"><strong>copy</strong></a>(self, message_set, new_mailbox, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-copy">copy</a>(message_set,&nbsp;new_mailbox)<br>
-Copy&nbsp;'message_set'&nbsp;messages&nbsp;onto&nbsp;end&nbsp;of&nbsp;'new_mailbox'.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-create"><strong>create</strong></a>(self, mailbox, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-create">create</a>(mailbox)<br>
-Create&nbsp;new&nbsp;mailbox.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-delete"><strong>delete</strong></a>(self, mailbox, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-delete">delete</a>(mailbox)<br>
-Delete&nbsp;old&nbsp;mailbox.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-deleteacl"><strong>deleteacl</strong></a>(self, mailbox, who, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-deleteacl">deleteacl</a>(mailbox,&nbsp;who)<br>
-Delete&nbsp;the&nbsp;ACLs&nbsp;(remove&nbsp;any&nbsp;rights)&nbsp;set&nbsp;for&nbsp;who&nbsp;on&nbsp;mailbox.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-enable"><strong>enable</strong></a>(self, capability)</dt><dd><tt>Send&nbsp;an&nbsp;<a href="http://www.rfc-editor.org/rfc/rfc5161.txt">RFC5161</a>&nbsp;enable&nbsp;string&nbsp;to&nbsp;the&nbsp;server.<br>
-&nbsp;<br>
-(typ,&nbsp;[data])&nbsp;=&nbsp;&lt;intance&gt;.<a href="#IMAP4_SSL-enable">enable</a>(capability)</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-enable_compression"><strong>enable_compression</strong></a>(self)</dt><dd><tt><a href="#IMAP4_SSL-enable_compression">enable_compression</a>()<br>
-Ask&nbsp;the&nbsp;server&nbsp;to&nbsp;start&nbsp;compressing&nbsp;the&nbsp;connection.<br>
-Should&nbsp;be&nbsp;called&nbsp;from&nbsp;user&nbsp;of&nbsp;this&nbsp;class&nbsp;after&nbsp;instantiation,&nbsp;as&nbsp;in:<br>
-&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;'COMPRESS=DEFLATE'&nbsp;in&nbsp;imapobj.capabilities:<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;imapobj.<a href="#IMAP4_SSL-enable_compression">enable_compression</a>()</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-examine"><strong>examine</strong></a>(self, mailbox='INBOX', **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-examine">examine</a>(mailbox='INBOX')<br>
-Select&nbsp;a&nbsp;mailbox&nbsp;for&nbsp;READ-ONLY&nbsp;access.&nbsp;(Flushes&nbsp;all&nbsp;untagged&nbsp;responses.)<br>
-'data'&nbsp;is&nbsp;count&nbsp;of&nbsp;messages&nbsp;in&nbsp;mailbox&nbsp;('EXISTS'&nbsp;response).<br>
-Mandated&nbsp;responses&nbsp;are&nbsp;('FLAGS',&nbsp;'EXISTS',&nbsp;'RECENT',&nbsp;'UIDVALIDITY'),&nbsp;so<br>
-other&nbsp;responses&nbsp;should&nbsp;be&nbsp;obtained&nbsp;via&nbsp;"<a href="#IMAP4_SSL-response">response</a>('FLAGS')"&nbsp;etc.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-expunge"><strong>expunge</strong></a>(self, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-expunge">expunge</a>()<br>
-Permanently&nbsp;remove&nbsp;deleted&nbsp;items&nbsp;from&nbsp;selected&nbsp;mailbox.<br>
-Generates&nbsp;'EXPUNGE'&nbsp;response&nbsp;for&nbsp;each&nbsp;deleted&nbsp;message.<br>
-'data'&nbsp;is&nbsp;list&nbsp;of&nbsp;'EXPUNGE'd&nbsp;message&nbsp;numbers&nbsp;in&nbsp;order&nbsp;received.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-fetch"><strong>fetch</strong></a>(self, message_set, message_parts, **kw)</dt><dd><tt>(typ,&nbsp;[data,&nbsp;...])&nbsp;=&nbsp;<a href="#IMAP4_SSL-fetch">fetch</a>(message_set,&nbsp;message_parts)<br>
-Fetch&nbsp;(parts&nbsp;of)&nbsp;messages.<br>
-'message_parts'&nbsp;should&nbsp;be&nbsp;a&nbsp;string&nbsp;of&nbsp;selected&nbsp;parts<br>
-enclosed&nbsp;in&nbsp;parentheses,&nbsp;eg:&nbsp;"(UID&nbsp;BODY[TEXT])".<br>
-'data'&nbsp;are&nbsp;tuples&nbsp;of&nbsp;message&nbsp;part&nbsp;envelope&nbsp;and&nbsp;data,<br>
-followed&nbsp;by&nbsp;a&nbsp;string&nbsp;containing&nbsp;the&nbsp;trailer.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-getacl"><strong>getacl</strong></a>(self, mailbox, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-getacl">getacl</a>(mailbox)<br>
-Get&nbsp;the&nbsp;ACLs&nbsp;for&nbsp;a&nbsp;mailbox.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-getannotation"><strong>getannotation</strong></a>(self, mailbox, entry, attribute, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-getannotation">getannotation</a>(mailbox,&nbsp;entry,&nbsp;attribute)<br>
-Retrieve&nbsp;ANNOTATIONs.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-getquota"><strong>getquota</strong></a>(self, root, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-getquota">getquota</a>(root)<br>
-Get&nbsp;the&nbsp;quota&nbsp;root's&nbsp;resource&nbsp;usage&nbsp;and&nbsp;limits.<br>
-(Part&nbsp;of&nbsp;the&nbsp;<a href="#IMAP4">IMAP4</a>&nbsp;QUOTA&nbsp;extension&nbsp;defined&nbsp;in&nbsp;rfc2087.)</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-getquotaroot"><strong>getquotaroot</strong></a>(self, mailbox, **kw)</dt><dd><tt>(typ,&nbsp;[[QUOTAROOT&nbsp;responses...],&nbsp;[QUOTA&nbsp;responses...]])&nbsp;=&nbsp;<a href="#IMAP4_SSL-getquotaroot">getquotaroot</a>(mailbox)<br>
-Get&nbsp;the&nbsp;list&nbsp;of&nbsp;quota&nbsp;roots&nbsp;for&nbsp;the&nbsp;named&nbsp;mailbox.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-id"><strong>id</strong></a>(self, *kv_pairs, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;&lt;instance&gt;.<a href="#IMAP4_SSL-id">id</a>(kv_pairs)<br>
-'kv_pairs'&nbsp;is&nbsp;a&nbsp;possibly&nbsp;empty&nbsp;list&nbsp;of&nbsp;keys&nbsp;and&nbsp;values.<br>
-'data'&nbsp;is&nbsp;a&nbsp;list&nbsp;of&nbsp;ID&nbsp;key&nbsp;value&nbsp;pairs&nbsp;or&nbsp;NIL.<br>
-NB:&nbsp;a&nbsp;single&nbsp;argument&nbsp;is&nbsp;assumed&nbsp;to&nbsp;be&nbsp;correctly&nbsp;formatted&nbsp;and&nbsp;is&nbsp;passed&nbsp;through&nbsp;unchanged<br>
-(for&nbsp;backward&nbsp;compatibility&nbsp;with&nbsp;earlier&nbsp;version).<br>
-Exchange&nbsp;information&nbsp;for&nbsp;problem&nbsp;analysis&nbsp;and&nbsp;determination.<br>
-The&nbsp;ID&nbsp;extension&nbsp;is&nbsp;defined&nbsp;in&nbsp;<a href="http://www.rfc-editor.org/rfc/rfc2971.txt">RFC&nbsp;2971</a>.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-idle"><strong>idle</strong></a>(self, timeout=None, **kw)</dt><dd><tt>"(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-idle">idle</a>(timeout=None)<br>
-Put&nbsp;server&nbsp;into&nbsp;IDLE&nbsp;mode&nbsp;until&nbsp;server&nbsp;notifies&nbsp;some&nbsp;change,<br>
-or&nbsp;'timeout'&nbsp;(secs)&nbsp;occurs&nbsp;(default:&nbsp;29&nbsp;minutes),<br>
-or&nbsp;another&nbsp;<a href="#IMAP4">IMAP4</a>&nbsp;command&nbsp;is&nbsp;scheduled.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-list"><strong>list</strong></a>(self, directory='""', pattern='*', **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-list">list</a>(directory='""',&nbsp;pattern='*')<br>
-List&nbsp;mailbox&nbsp;names&nbsp;in&nbsp;directory&nbsp;matching&nbsp;pattern.<br>
-'data'&nbsp;is&nbsp;list&nbsp;of&nbsp;LIST&nbsp;responses.<br>
-&nbsp;<br>
-NB:&nbsp;for&nbsp;'pattern':<br>
-%&nbsp;matches&nbsp;all&nbsp;except&nbsp;separator&nbsp;(&nbsp;so&nbsp;LIST&nbsp;""&nbsp;"%"&nbsp;returns&nbsp;names&nbsp;at&nbsp;root)<br>
-*&nbsp;matches&nbsp;all&nbsp;(so&nbsp;LIST&nbsp;""&nbsp;"*"&nbsp;returns&nbsp;whole&nbsp;directory&nbsp;tree&nbsp;from&nbsp;root)</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-login"><strong>login</strong></a>(self, user, password, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-login">login</a>(user,&nbsp;password)<br>
-Identify&nbsp;client&nbsp;using&nbsp;plaintext&nbsp;password.<br>
-NB:&nbsp;'password'&nbsp;will&nbsp;be&nbsp;quoted.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-login_cram_md5"><strong>login_cram_md5</strong></a>(self, user, password, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-login_cram_md5">login_cram_md5</a>(user,&nbsp;password)<br>
-Force&nbsp;use&nbsp;of&nbsp;CRAM-MD5&nbsp;authentication.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-logout"><strong>logout</strong></a>(self, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-logout">logout</a>()<br>
-Shutdown&nbsp;connection&nbsp;to&nbsp;server.<br>
-Returns&nbsp;server&nbsp;'BYE'&nbsp;response.<br>
-NB:&nbsp;You&nbsp;must&nbsp;call&nbsp;this&nbsp;to&nbsp;shut&nbsp;down&nbsp;threads&nbsp;before&nbsp;discarding&nbsp;an&nbsp;instance.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-lsub"><strong>lsub</strong></a>(self, directory='""', pattern='*', **kw)</dt><dd><tt>(typ,&nbsp;[data,&nbsp;...])&nbsp;=&nbsp;<a href="#IMAP4_SSL-lsub">lsub</a>(directory='""',&nbsp;pattern='*')<br>
-List&nbsp;'subscribed'&nbsp;mailbox&nbsp;names&nbsp;in&nbsp;directory&nbsp;matching&nbsp;pattern.<br>
-'data'&nbsp;are&nbsp;tuples&nbsp;of&nbsp;message&nbsp;part&nbsp;envelope&nbsp;and&nbsp;data.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-myrights"><strong>myrights</strong></a>(self, mailbox, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-myrights">myrights</a>(mailbox)<br>
-Show&nbsp;my&nbsp;ACLs&nbsp;for&nbsp;a&nbsp;mailbox&nbsp;(i.e.&nbsp;the&nbsp;rights&nbsp;that&nbsp;I&nbsp;have&nbsp;on&nbsp;mailbox).</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-namespace"><strong>namespace</strong></a>(self, **kw)</dt><dd><tt>(typ,&nbsp;[data,&nbsp;...])&nbsp;=&nbsp;<a href="#IMAP4_SSL-namespace">namespace</a>()<br>
-Returns&nbsp;IMAP&nbsp;namespaces&nbsp;ala&nbsp;rfc2342.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-noop"><strong>noop</strong></a>(self, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-noop">noop</a>()<br>
-Send&nbsp;NOOP&nbsp;command.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-open_socket"><strong>open_socket</strong></a>(self)</dt><dd><tt><a href="#IMAP4_SSL-open_socket">open_socket</a>()<br>
-Open&nbsp;socket&nbsp;choosing&nbsp;first&nbsp;address&nbsp;family&nbsp;available.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-partial"><strong>partial</strong></a>(self, message_num, message_part, start, length, **kw)</dt><dd><tt>(typ,&nbsp;[data,&nbsp;...])&nbsp;=&nbsp;<a href="#IMAP4_SSL-partial">partial</a>(message_num,&nbsp;message_part,&nbsp;start,&nbsp;length)<br>
-Fetch&nbsp;truncated&nbsp;part&nbsp;of&nbsp;a&nbsp;message.<br>
-'data'&nbsp;is&nbsp;tuple&nbsp;of&nbsp;message&nbsp;part&nbsp;envelope&nbsp;and&nbsp;data.<br>
-NB:&nbsp;obsolete.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-pop_untagged_responses"><strong>pop_untagged_responses</strong></a>(self)</dt><dd><tt>for&nbsp;typ,data&nbsp;in&nbsp;<a href="#IMAP4_SSL-pop_untagged_responses">pop_untagged_responses</a>():&nbsp;pass<br>
-Generator&nbsp;for&nbsp;any&nbsp;remaining&nbsp;untagged&nbsp;responses.<br>
-Returns&nbsp;and&nbsp;removes&nbsp;untagged&nbsp;responses&nbsp;in&nbsp;order&nbsp;of&nbsp;reception.<br>
-Use&nbsp;at&nbsp;your&nbsp;own&nbsp;risk!</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-proxyauth"><strong>proxyauth</strong></a>(self, user, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-proxyauth">proxyauth</a>(user)<br>
-Assume&nbsp;authentication&nbsp;as&nbsp;'user'.<br>
-(Allows&nbsp;an&nbsp;authorised&nbsp;administrator&nbsp;to&nbsp;proxy&nbsp;into&nbsp;any&nbsp;user's&nbsp;mailbox.)</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-recent"><strong>recent</strong></a>(self, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-recent">recent</a>()<br>
-Return&nbsp;'RECENT'&nbsp;responses&nbsp;if&nbsp;any&nbsp;exist,<br>
-else&nbsp;prompt&nbsp;server&nbsp;for&nbsp;an&nbsp;update&nbsp;using&nbsp;the&nbsp;'NOOP'&nbsp;command.<br>
-'data'&nbsp;is&nbsp;None&nbsp;if&nbsp;no&nbsp;new&nbsp;messages,<br>
-else&nbsp;list&nbsp;of&nbsp;RECENT&nbsp;responses,&nbsp;most&nbsp;recent&nbsp;last.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-rename"><strong>rename</strong></a>(self, oldmailbox, newmailbox, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-rename">rename</a>(oldmailbox,&nbsp;newmailbox)<br>
-Rename&nbsp;old&nbsp;mailbox&nbsp;name&nbsp;to&nbsp;new.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-response"><strong>response</strong></a>(self, code, **kw)</dt><dd><tt>(code,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-response">response</a>(code)<br>
-Return&nbsp;data&nbsp;for&nbsp;response&nbsp;'code'&nbsp;if&nbsp;received,&nbsp;or&nbsp;None.<br>
-Old&nbsp;value&nbsp;for&nbsp;response&nbsp;'code'&nbsp;is&nbsp;cleared.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-search"><strong>search</strong></a>(self, charset, *criteria, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-search">search</a>(charset,&nbsp;criterion,&nbsp;...)<br>
-Search&nbsp;mailbox&nbsp;for&nbsp;matching&nbsp;messages.<br>
-If&nbsp;UTF8&nbsp;is&nbsp;enabled,&nbsp;charset&nbsp;MUST&nbsp;be&nbsp;None.<br>
-'data'&nbsp;is&nbsp;space&nbsp;separated&nbsp;list&nbsp;of&nbsp;matching&nbsp;message&nbsp;numbers.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-select"><strong>select</strong></a>(self, mailbox='INBOX', readonly=False, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-select">select</a>(mailbox='INBOX',&nbsp;readonly=False)<br>
-Select&nbsp;a&nbsp;mailbox.&nbsp;(Flushes&nbsp;all&nbsp;untagged&nbsp;responses.)<br>
-'data'&nbsp;is&nbsp;count&nbsp;of&nbsp;messages&nbsp;in&nbsp;mailbox&nbsp;('EXISTS'&nbsp;response).<br>
-Mandated&nbsp;responses&nbsp;are&nbsp;('FLAGS',&nbsp;'EXISTS',&nbsp;'RECENT',&nbsp;'UIDVALIDITY'),&nbsp;so<br>
-other&nbsp;responses&nbsp;should&nbsp;be&nbsp;obtained&nbsp;via&nbsp;"<a href="#IMAP4_SSL-response">response</a>('FLAGS')"&nbsp;etc.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-setacl"><strong>setacl</strong></a>(self, mailbox, who, what, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-setacl">setacl</a>(mailbox,&nbsp;who,&nbsp;what)<br>
-Set&nbsp;a&nbsp;mailbox&nbsp;acl.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-setannotation"><strong>setannotation</strong></a>(self, *args, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-setannotation">setannotation</a>(mailbox[,&nbsp;entry,&nbsp;attribute]+)<br>
-Set&nbsp;ANNOTATIONs.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-setquota"><strong>setquota</strong></a>(self, root, limits, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-setquota">setquota</a>(root,&nbsp;limits)<br>
-Set&nbsp;the&nbsp;quota&nbsp;root's&nbsp;resource&nbsp;limits.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-shutdown"><strong>shutdown</strong></a>(self)</dt><dd><tt><a href="#IMAP4_SSL-shutdown">shutdown</a>()<br>
-Close&nbsp;I/O&nbsp;established&nbsp;in&nbsp;"open".</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-socket"><strong>socket</strong></a>(self)</dt><dd><tt>socket&nbsp;=&nbsp;<a href="#IMAP4_SSL-socket">socket</a>()<br>
-Return&nbsp;socket&nbsp;instance&nbsp;used&nbsp;to&nbsp;connect&nbsp;to&nbsp;<a href="#IMAP4">IMAP4</a>&nbsp;server.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-sort"><strong>sort</strong></a>(self, sort_criteria, charset, *search_criteria, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-sort">sort</a>(sort_criteria,&nbsp;charset,&nbsp;search_criteria,&nbsp;...)<br>
-IMAP4rev1&nbsp;extension&nbsp;SORT&nbsp;command.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-ssl_wrap_socket"><strong>ssl_wrap_socket</strong></a>(self)</dt></dl>
-
-<dl><dt><a name="IMAP4_SSL-start_compressing"><strong>start_compressing</strong></a>(self)</dt><dd><tt><a href="#IMAP4_SSL-start_compressing">start_compressing</a>()<br>
-Enable&nbsp;deflate&nbsp;compression&nbsp;on&nbsp;the&nbsp;socket&nbsp;(<a href="http://www.rfc-editor.org/rfc/rfc4978.txt">RFC&nbsp;4978</a>).</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-starttls"><strong>starttls</strong></a>(self, keyfile=None, certfile=None, ca_certs=None, cert_verify_cb=None, ssl_version='ssl23', tls_level='tls_compat', **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-starttls">starttls</a>(keyfile=None,&nbsp;certfile=None,&nbsp;ca_certs=None,&nbsp;cert_verify_cb=None,&nbsp;ssl_version="ssl23",&nbsp;tls_level="tls_compat")<br>
-Start&nbsp;TLS&nbsp;negotiation&nbsp;as&nbsp;per&nbsp;<a href="http://www.rfc-editor.org/rfc/rfc2595.txt">RFC&nbsp;2595</a>.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-status"><strong>status</strong></a>(self, mailbox, names, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-status">status</a>(mailbox,&nbsp;names)<br>
-Request&nbsp;named&nbsp;status&nbsp;conditions&nbsp;for&nbsp;mailbox.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-store"><strong>store</strong></a>(self, message_set, command, flags, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-store">store</a>(message_set,&nbsp;command,&nbsp;flags)<br>
-Alters&nbsp;flag&nbsp;dispositions&nbsp;for&nbsp;messages&nbsp;in&nbsp;mailbox.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-subscribe"><strong>subscribe</strong></a>(self, mailbox, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-subscribe">subscribe</a>(mailbox)<br>
-Subscribe&nbsp;to&nbsp;new&nbsp;mailbox.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-thread"><strong>thread</strong></a>(self, threading_algorithm, charset, *search_criteria, **kw)</dt><dd><tt>(type,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-thread">thread</a>(threading_alogrithm,&nbsp;charset,&nbsp;search_criteria,&nbsp;...)<br>
-IMAPrev1&nbsp;extension&nbsp;THREAD&nbsp;command.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-uid"><strong>uid</strong></a>(self, command, *args, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-uid">uid</a>(command,&nbsp;arg,&nbsp;...)<br>
-Execute&nbsp;"command&nbsp;arg&nbsp;..."&nbsp;with&nbsp;messages&nbsp;identified&nbsp;by&nbsp;UID,<br>
-&nbsp;&nbsp;&nbsp;&nbsp;rather&nbsp;than&nbsp;message&nbsp;number.<br>
-Assumes&nbsp;'command'&nbsp;is&nbsp;legal&nbsp;in&nbsp;current&nbsp;state.<br>
-Returns&nbsp;response&nbsp;appropriate&nbsp;to&nbsp;'command'.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-unsubscribe"><strong>unsubscribe</strong></a>(self, mailbox, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-unsubscribe">unsubscribe</a>(mailbox)<br>
-Unsubscribe&nbsp;from&nbsp;old&nbsp;mailbox.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_SSL-xatom"><strong>xatom</strong></a>(self, name, *args, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_SSL-xatom">xatom</a>(name,&nbsp;arg,&nbsp;...)<br>
-Allow&nbsp;simple&nbsp;extension&nbsp;commands&nbsp;notified&nbsp;by&nbsp;server&nbsp;in&nbsp;CAPABILITY&nbsp;response.<br>
-Assumes&nbsp;extension&nbsp;command&nbsp;'name'&nbsp;is&nbsp;legal&nbsp;in&nbsp;current&nbsp;state.<br>
-Returns&nbsp;response&nbsp;appropriate&nbsp;to&nbsp;extension&nbsp;command&nbsp;'name'.</tt></dd></dl>
-
-<hr>
-Data descriptors inherited from <a href="pailhawk.resources.imaplib2.html#IMAP4">IMAP4</a>:<br>
-<dl><dt><strong>__dict__</strong></dt>
-<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
-</dl>
-<dl><dt><strong>__weakref__</strong></dt>
-<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
-</dl>
-<hr>
-Data and other attributes inherited from <a href="pailhawk.resources.imaplib2.html#IMAP4">IMAP4</a>:<br>
-<dl><dt><strong>abort</strong> = &lt;class 'pailhawk.resources.imaplib2.IMAP4.abort'&gt;</dl>
-
-<dl><dt><strong>continuation_cre</strong> = re.compile(b'\\+( (?P&lt;data&gt;.*))?')</dl>
-
-<dl><dt><strong>error</strong> = &lt;class 'pailhawk.resources.imaplib2.IMAP4.error'&gt;</dl>
-
-<dl><dt><strong>mapCRLF_cre</strong> = re.compile(b'\\r\\n|\\r|\\n')</dl>
-
-<dl><dt><strong>readonly</strong> = &lt;class 'pailhawk.resources.imaplib2.IMAP4.readonly'&gt;</dl>
-
-<dl><dt><strong>response_code_cre</strong> = re.compile(b'\\[(?P&lt;type&gt;[A-Z-]+)( (?P&lt;data&gt;[^\\]]*))?\\]')</dl>
-
-<dl><dt><strong>untagged_response_cre</strong> = re.compile(b'\\* (?P&lt;type&gt;[A-Z-]+)( (?P&lt;data&gt;.*))?')</dl>
-
-</td></tr></table> <p>
-<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
-<tr bgcolor="#ffc8d8">
-<td colspan=3 valign=bottom>&nbsp;<br>
-<font color="#000000" face="helvetica, arial"><a name="IMAP4_stream">class <strong>IMAP4_stream</strong></a>(<a href="pailhawk.resources.imaplib2.html#IMAP4">IMAP4</a>)</font></td></tr>
-    
-<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
-<td colspan=2><tt><a href="#IMAP4">IMAP4</a>&nbsp;client&nbsp;class&nbsp;over&nbsp;a&nbsp;stream<br>
-&nbsp;<br>
-Instantiate&nbsp;with:<br>
-&nbsp;&nbsp;&nbsp;&nbsp;<a href="#IMAP4_stream">IMAP4_stream</a>(command,&nbsp;debug=None,&nbsp;debug_file=None,&nbsp;identifier=None,&nbsp;timeout=None,&nbsp;debug_buf_lvl=None)<br>
-&nbsp;<br>
-&nbsp;&nbsp;&nbsp;&nbsp;command&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;string&nbsp;that&nbsp;can&nbsp;be&nbsp;passed&nbsp;to&nbsp;subprocess.Popen();<br>
-&nbsp;&nbsp;&nbsp;&nbsp;debug&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;debug&nbsp;level&nbsp;(default:&nbsp;0&nbsp;-&nbsp;no&nbsp;debug);<br>
-&nbsp;&nbsp;&nbsp;&nbsp;debug_file&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;debug&nbsp;stream&nbsp;(default:&nbsp;sys.stderr);<br>
-&nbsp;&nbsp;&nbsp;&nbsp;identifier&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;thread&nbsp;identifier&nbsp;prefix&nbsp;(default:&nbsp;host);<br>
-&nbsp;&nbsp;&nbsp;&nbsp;timeout&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;timeout&nbsp;in&nbsp;seconds&nbsp;when&nbsp;expecting&nbsp;a&nbsp;command&nbsp;response.<br>
-&nbsp;&nbsp;&nbsp;&nbsp;debug_buf_lvl&nbsp;&nbsp;-&nbsp;debug&nbsp;level&nbsp;at&nbsp;which&nbsp;buffering&nbsp;is&nbsp;turned&nbsp;off.<br>
-&nbsp;<br>
-For&nbsp;more&nbsp;documentation&nbsp;see&nbsp;the&nbsp;docstring&nbsp;of&nbsp;the&nbsp;parent&nbsp;class&nbsp;<a href="#IMAP4">IMAP4</a>.<br>&nbsp;</tt></td></tr>
-<tr><td>&nbsp;</td>
-<td width="100%"><dl><dt>Method resolution order:</dt>
-<dd><a href="pailhawk.resources.imaplib2.html#IMAP4_stream">IMAP4_stream</a></dd>
-<dd><a href="pailhawk.resources.imaplib2.html#IMAP4">IMAP4</a></dd>
-<dd><a href="builtins.html#object">builtins.object</a></dd>
-</dl>
-<hr>
-Methods defined here:<br>
-<dl><dt><a name="IMAP4_stream-__init__"><strong>__init__</strong></a>(self, command, debug=None, debug_file=None, identifier=None, timeout=None, debug_buf_lvl=None)</dt><dd><tt>Initialize&nbsp;self.&nbsp;&nbsp;See&nbsp;help(type(self))&nbsp;for&nbsp;accurate&nbsp;signature.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-open"><strong>open</strong></a>(self, host=None, port=None)</dt><dd><tt><a href="#IMAP4_stream-open">open</a>(host=None,&nbsp;port=None)<br>
-Setup&nbsp;a&nbsp;stream&nbsp;connection&nbsp;via&nbsp;'self.<strong>command</strong>'.<br>
-This&nbsp;connection&nbsp;will&nbsp;be&nbsp;used&nbsp;by&nbsp;the&nbsp;routines:<br>
-&nbsp;&nbsp;&nbsp;&nbsp;read,&nbsp;send,&nbsp;shutdown,&nbsp;socket.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-read"><strong>read</strong></a>(self, size)</dt><dd><tt>Read&nbsp;'size'&nbsp;bytes&nbsp;from&nbsp;remote.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-send"><strong>send</strong></a>(self, data)</dt><dd><tt>Send&nbsp;data&nbsp;to&nbsp;remote.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-shutdown"><strong>shutdown</strong></a>(self)</dt><dd><tt>Close&nbsp;I/O&nbsp;established&nbsp;in&nbsp;"open".</tt></dd></dl>
-
-<hr>
-Methods inherited from <a href="pailhawk.resources.imaplib2.html#IMAP4">IMAP4</a>:<br>
-<dl><dt><a name="IMAP4_stream-__enter__"><strong>__enter__</strong></a>(self)</dt></dl>
-
-<dl><dt><a name="IMAP4_stream-__exit__"><strong>__exit__</strong></a>(self, *args)</dt></dl>
-
-<dl><dt><a name="IMAP4_stream-__getattr__"><strong>__getattr__</strong></a>(self, attr)</dt></dl>
-
-<dl><dt><a name="IMAP4_stream-append"><strong>append</strong></a>(self, mailbox, flags, date_time, message, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-append">append</a>(mailbox,&nbsp;flags,&nbsp;date_time,&nbsp;message)<br>
-Append&nbsp;message&nbsp;to&nbsp;named&nbsp;mailbox.<br>
-All&nbsp;args&nbsp;except&nbsp;`message'&nbsp;can&nbsp;be&nbsp;None.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-authenticate"><strong>authenticate</strong></a>(self, mechanism, authobject, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-authenticate">authenticate</a>(mechanism,&nbsp;authobject)<br>
-Authenticate&nbsp;command&nbsp;-&nbsp;requires&nbsp;response&nbsp;processing.<br>
-&nbsp;<br>
-'mechanism'&nbsp;specifies&nbsp;which&nbsp;authentication&nbsp;mechanism&nbsp;is&nbsp;to<br>
-be&nbsp;used&nbsp;-&nbsp;it&nbsp;must&nbsp;appear&nbsp;in&nbsp;&lt;instance&gt;.capabilities&nbsp;in&nbsp;the<br>
-form&nbsp;AUTH=&lt;mechanism&gt;.<br>
-&nbsp;<br>
-'authobject'&nbsp;must&nbsp;be&nbsp;a&nbsp;callable&nbsp;<a href="builtins.html#object">object</a>:<br>
-&nbsp;<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;data&nbsp;=&nbsp;authobject(response)<br>
-&nbsp;<br>
-It&nbsp;will&nbsp;be&nbsp;called&nbsp;to&nbsp;process&nbsp;server&nbsp;continuation&nbsp;responses,<br>
-the&nbsp;'response'&nbsp;argument&nbsp;will&nbsp;be&nbsp;a&nbsp;'bytes'.&nbsp;&nbsp;It&nbsp;should&nbsp;return<br>
-bytes&nbsp;that&nbsp;will&nbsp;be&nbsp;encoded&nbsp;and&nbsp;sent&nbsp;to&nbsp;server.&nbsp;&nbsp;It&nbsp;should<br>
-return&nbsp;None&nbsp;if&nbsp;the&nbsp;client&nbsp;abort&nbsp;response&nbsp;'*'&nbsp;should&nbsp;be&nbsp;sent<br>
-instead.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-capability"><strong>capability</strong></a>(self, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-capability">capability</a>()<br>
-Fetch&nbsp;capabilities&nbsp;list&nbsp;from&nbsp;server.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-check"><strong>check</strong></a>(self, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-check">check</a>()<br>
-Checkpoint&nbsp;mailbox&nbsp;on&nbsp;server.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-close"><strong>close</strong></a>(self, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-close">close</a>()<br>
-Close&nbsp;currently&nbsp;selected&nbsp;mailbox.<br>
-&nbsp;<br>
-Deleted&nbsp;messages&nbsp;are&nbsp;removed&nbsp;from&nbsp;writable&nbsp;mailbox.<br>
-This&nbsp;is&nbsp;the&nbsp;recommended&nbsp;command&nbsp;before&nbsp;'LOGOUT'.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-copy"><strong>copy</strong></a>(self, message_set, new_mailbox, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-copy">copy</a>(message_set,&nbsp;new_mailbox)<br>
-Copy&nbsp;'message_set'&nbsp;messages&nbsp;onto&nbsp;end&nbsp;of&nbsp;'new_mailbox'.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-create"><strong>create</strong></a>(self, mailbox, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-create">create</a>(mailbox)<br>
-Create&nbsp;new&nbsp;mailbox.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-delete"><strong>delete</strong></a>(self, mailbox, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-delete">delete</a>(mailbox)<br>
-Delete&nbsp;old&nbsp;mailbox.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-deleteacl"><strong>deleteacl</strong></a>(self, mailbox, who, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-deleteacl">deleteacl</a>(mailbox,&nbsp;who)<br>
-Delete&nbsp;the&nbsp;ACLs&nbsp;(remove&nbsp;any&nbsp;rights)&nbsp;set&nbsp;for&nbsp;who&nbsp;on&nbsp;mailbox.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-enable"><strong>enable</strong></a>(self, capability)</dt><dd><tt>Send&nbsp;an&nbsp;<a href="http://www.rfc-editor.org/rfc/rfc5161.txt">RFC5161</a>&nbsp;enable&nbsp;string&nbsp;to&nbsp;the&nbsp;server.<br>
-&nbsp;<br>
-(typ,&nbsp;[data])&nbsp;=&nbsp;&lt;intance&gt;.<a href="#IMAP4_stream-enable">enable</a>(capability)</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-enable_compression"><strong>enable_compression</strong></a>(self)</dt><dd><tt><a href="#IMAP4_stream-enable_compression">enable_compression</a>()<br>
-Ask&nbsp;the&nbsp;server&nbsp;to&nbsp;start&nbsp;compressing&nbsp;the&nbsp;connection.<br>
-Should&nbsp;be&nbsp;called&nbsp;from&nbsp;user&nbsp;of&nbsp;this&nbsp;class&nbsp;after&nbsp;instantiation,&nbsp;as&nbsp;in:<br>
-&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;'COMPRESS=DEFLATE'&nbsp;in&nbsp;imapobj.capabilities:<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;imapobj.<a href="#IMAP4_stream-enable_compression">enable_compression</a>()</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-examine"><strong>examine</strong></a>(self, mailbox='INBOX', **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-examine">examine</a>(mailbox='INBOX')<br>
-Select&nbsp;a&nbsp;mailbox&nbsp;for&nbsp;READ-ONLY&nbsp;access.&nbsp;(Flushes&nbsp;all&nbsp;untagged&nbsp;responses.)<br>
-'data'&nbsp;is&nbsp;count&nbsp;of&nbsp;messages&nbsp;in&nbsp;mailbox&nbsp;('EXISTS'&nbsp;response).<br>
-Mandated&nbsp;responses&nbsp;are&nbsp;('FLAGS',&nbsp;'EXISTS',&nbsp;'RECENT',&nbsp;'UIDVALIDITY'),&nbsp;so<br>
-other&nbsp;responses&nbsp;should&nbsp;be&nbsp;obtained&nbsp;via&nbsp;"<a href="#IMAP4_stream-response">response</a>('FLAGS')"&nbsp;etc.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-expunge"><strong>expunge</strong></a>(self, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-expunge">expunge</a>()<br>
-Permanently&nbsp;remove&nbsp;deleted&nbsp;items&nbsp;from&nbsp;selected&nbsp;mailbox.<br>
-Generates&nbsp;'EXPUNGE'&nbsp;response&nbsp;for&nbsp;each&nbsp;deleted&nbsp;message.<br>
-'data'&nbsp;is&nbsp;list&nbsp;of&nbsp;'EXPUNGE'd&nbsp;message&nbsp;numbers&nbsp;in&nbsp;order&nbsp;received.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-fetch"><strong>fetch</strong></a>(self, message_set, message_parts, **kw)</dt><dd><tt>(typ,&nbsp;[data,&nbsp;...])&nbsp;=&nbsp;<a href="#IMAP4_stream-fetch">fetch</a>(message_set,&nbsp;message_parts)<br>
-Fetch&nbsp;(parts&nbsp;of)&nbsp;messages.<br>
-'message_parts'&nbsp;should&nbsp;be&nbsp;a&nbsp;string&nbsp;of&nbsp;selected&nbsp;parts<br>
-enclosed&nbsp;in&nbsp;parentheses,&nbsp;eg:&nbsp;"(UID&nbsp;BODY[TEXT])".<br>
-'data'&nbsp;are&nbsp;tuples&nbsp;of&nbsp;message&nbsp;part&nbsp;envelope&nbsp;and&nbsp;data,<br>
-followed&nbsp;by&nbsp;a&nbsp;string&nbsp;containing&nbsp;the&nbsp;trailer.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-getacl"><strong>getacl</strong></a>(self, mailbox, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-getacl">getacl</a>(mailbox)<br>
-Get&nbsp;the&nbsp;ACLs&nbsp;for&nbsp;a&nbsp;mailbox.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-getannotation"><strong>getannotation</strong></a>(self, mailbox, entry, attribute, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-getannotation">getannotation</a>(mailbox,&nbsp;entry,&nbsp;attribute)<br>
-Retrieve&nbsp;ANNOTATIONs.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-getquota"><strong>getquota</strong></a>(self, root, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-getquota">getquota</a>(root)<br>
-Get&nbsp;the&nbsp;quota&nbsp;root's&nbsp;resource&nbsp;usage&nbsp;and&nbsp;limits.<br>
-(Part&nbsp;of&nbsp;the&nbsp;<a href="#IMAP4">IMAP4</a>&nbsp;QUOTA&nbsp;extension&nbsp;defined&nbsp;in&nbsp;rfc2087.)</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-getquotaroot"><strong>getquotaroot</strong></a>(self, mailbox, **kw)</dt><dd><tt>(typ,&nbsp;[[QUOTAROOT&nbsp;responses...],&nbsp;[QUOTA&nbsp;responses...]])&nbsp;=&nbsp;<a href="#IMAP4_stream-getquotaroot">getquotaroot</a>(mailbox)<br>
-Get&nbsp;the&nbsp;list&nbsp;of&nbsp;quota&nbsp;roots&nbsp;for&nbsp;the&nbsp;named&nbsp;mailbox.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-id"><strong>id</strong></a>(self, *kv_pairs, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;&lt;instance&gt;.<a href="#IMAP4_stream-id">id</a>(kv_pairs)<br>
-'kv_pairs'&nbsp;is&nbsp;a&nbsp;possibly&nbsp;empty&nbsp;list&nbsp;of&nbsp;keys&nbsp;and&nbsp;values.<br>
-'data'&nbsp;is&nbsp;a&nbsp;list&nbsp;of&nbsp;ID&nbsp;key&nbsp;value&nbsp;pairs&nbsp;or&nbsp;NIL.<br>
-NB:&nbsp;a&nbsp;single&nbsp;argument&nbsp;is&nbsp;assumed&nbsp;to&nbsp;be&nbsp;correctly&nbsp;formatted&nbsp;and&nbsp;is&nbsp;passed&nbsp;through&nbsp;unchanged<br>
-(for&nbsp;backward&nbsp;compatibility&nbsp;with&nbsp;earlier&nbsp;version).<br>
-Exchange&nbsp;information&nbsp;for&nbsp;problem&nbsp;analysis&nbsp;and&nbsp;determination.<br>
-The&nbsp;ID&nbsp;extension&nbsp;is&nbsp;defined&nbsp;in&nbsp;<a href="http://www.rfc-editor.org/rfc/rfc2971.txt">RFC&nbsp;2971</a>.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-idle"><strong>idle</strong></a>(self, timeout=None, **kw)</dt><dd><tt>"(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-idle">idle</a>(timeout=None)<br>
-Put&nbsp;server&nbsp;into&nbsp;IDLE&nbsp;mode&nbsp;until&nbsp;server&nbsp;notifies&nbsp;some&nbsp;change,<br>
-or&nbsp;'timeout'&nbsp;(secs)&nbsp;occurs&nbsp;(default:&nbsp;29&nbsp;minutes),<br>
-or&nbsp;another&nbsp;<a href="#IMAP4">IMAP4</a>&nbsp;command&nbsp;is&nbsp;scheduled.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-list"><strong>list</strong></a>(self, directory='""', pattern='*', **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-list">list</a>(directory='""',&nbsp;pattern='*')<br>
-List&nbsp;mailbox&nbsp;names&nbsp;in&nbsp;directory&nbsp;matching&nbsp;pattern.<br>
-'data'&nbsp;is&nbsp;list&nbsp;of&nbsp;LIST&nbsp;responses.<br>
-&nbsp;<br>
-NB:&nbsp;for&nbsp;'pattern':<br>
-%&nbsp;matches&nbsp;all&nbsp;except&nbsp;separator&nbsp;(&nbsp;so&nbsp;LIST&nbsp;""&nbsp;"%"&nbsp;returns&nbsp;names&nbsp;at&nbsp;root)<br>
-*&nbsp;matches&nbsp;all&nbsp;(so&nbsp;LIST&nbsp;""&nbsp;"*"&nbsp;returns&nbsp;whole&nbsp;directory&nbsp;tree&nbsp;from&nbsp;root)</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-login"><strong>login</strong></a>(self, user, password, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-login">login</a>(user,&nbsp;password)<br>
-Identify&nbsp;client&nbsp;using&nbsp;plaintext&nbsp;password.<br>
-NB:&nbsp;'password'&nbsp;will&nbsp;be&nbsp;quoted.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-login_cram_md5"><strong>login_cram_md5</strong></a>(self, user, password, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-login_cram_md5">login_cram_md5</a>(user,&nbsp;password)<br>
-Force&nbsp;use&nbsp;of&nbsp;CRAM-MD5&nbsp;authentication.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-logout"><strong>logout</strong></a>(self, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-logout">logout</a>()<br>
-Shutdown&nbsp;connection&nbsp;to&nbsp;server.<br>
-Returns&nbsp;server&nbsp;'BYE'&nbsp;response.<br>
-NB:&nbsp;You&nbsp;must&nbsp;call&nbsp;this&nbsp;to&nbsp;shut&nbsp;down&nbsp;threads&nbsp;before&nbsp;discarding&nbsp;an&nbsp;instance.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-lsub"><strong>lsub</strong></a>(self, directory='""', pattern='*', **kw)</dt><dd><tt>(typ,&nbsp;[data,&nbsp;...])&nbsp;=&nbsp;<a href="#IMAP4_stream-lsub">lsub</a>(directory='""',&nbsp;pattern='*')<br>
-List&nbsp;'subscribed'&nbsp;mailbox&nbsp;names&nbsp;in&nbsp;directory&nbsp;matching&nbsp;pattern.<br>
-'data'&nbsp;are&nbsp;tuples&nbsp;of&nbsp;message&nbsp;part&nbsp;envelope&nbsp;and&nbsp;data.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-myrights"><strong>myrights</strong></a>(self, mailbox, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-myrights">myrights</a>(mailbox)<br>
-Show&nbsp;my&nbsp;ACLs&nbsp;for&nbsp;a&nbsp;mailbox&nbsp;(i.e.&nbsp;the&nbsp;rights&nbsp;that&nbsp;I&nbsp;have&nbsp;on&nbsp;mailbox).</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-namespace"><strong>namespace</strong></a>(self, **kw)</dt><dd><tt>(typ,&nbsp;[data,&nbsp;...])&nbsp;=&nbsp;<a href="#IMAP4_stream-namespace">namespace</a>()<br>
-Returns&nbsp;IMAP&nbsp;namespaces&nbsp;ala&nbsp;rfc2342.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-noop"><strong>noop</strong></a>(self, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-noop">noop</a>()<br>
-Send&nbsp;NOOP&nbsp;command.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-open_socket"><strong>open_socket</strong></a>(self)</dt><dd><tt><a href="#IMAP4_stream-open_socket">open_socket</a>()<br>
-Open&nbsp;socket&nbsp;choosing&nbsp;first&nbsp;address&nbsp;family&nbsp;available.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-partial"><strong>partial</strong></a>(self, message_num, message_part, start, length, **kw)</dt><dd><tt>(typ,&nbsp;[data,&nbsp;...])&nbsp;=&nbsp;<a href="#IMAP4_stream-partial">partial</a>(message_num,&nbsp;message_part,&nbsp;start,&nbsp;length)<br>
-Fetch&nbsp;truncated&nbsp;part&nbsp;of&nbsp;a&nbsp;message.<br>
-'data'&nbsp;is&nbsp;tuple&nbsp;of&nbsp;message&nbsp;part&nbsp;envelope&nbsp;and&nbsp;data.<br>
-NB:&nbsp;obsolete.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-pop_untagged_responses"><strong>pop_untagged_responses</strong></a>(self)</dt><dd><tt>for&nbsp;typ,data&nbsp;in&nbsp;<a href="#IMAP4_stream-pop_untagged_responses">pop_untagged_responses</a>():&nbsp;pass<br>
-Generator&nbsp;for&nbsp;any&nbsp;remaining&nbsp;untagged&nbsp;responses.<br>
-Returns&nbsp;and&nbsp;removes&nbsp;untagged&nbsp;responses&nbsp;in&nbsp;order&nbsp;of&nbsp;reception.<br>
-Use&nbsp;at&nbsp;your&nbsp;own&nbsp;risk!</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-proxyauth"><strong>proxyauth</strong></a>(self, user, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-proxyauth">proxyauth</a>(user)<br>
-Assume&nbsp;authentication&nbsp;as&nbsp;'user'.<br>
-(Allows&nbsp;an&nbsp;authorised&nbsp;administrator&nbsp;to&nbsp;proxy&nbsp;into&nbsp;any&nbsp;user's&nbsp;mailbox.)</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-recent"><strong>recent</strong></a>(self, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-recent">recent</a>()<br>
-Return&nbsp;'RECENT'&nbsp;responses&nbsp;if&nbsp;any&nbsp;exist,<br>
-else&nbsp;prompt&nbsp;server&nbsp;for&nbsp;an&nbsp;update&nbsp;using&nbsp;the&nbsp;'NOOP'&nbsp;command.<br>
-'data'&nbsp;is&nbsp;None&nbsp;if&nbsp;no&nbsp;new&nbsp;messages,<br>
-else&nbsp;list&nbsp;of&nbsp;RECENT&nbsp;responses,&nbsp;most&nbsp;recent&nbsp;last.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-rename"><strong>rename</strong></a>(self, oldmailbox, newmailbox, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-rename">rename</a>(oldmailbox,&nbsp;newmailbox)<br>
-Rename&nbsp;old&nbsp;mailbox&nbsp;name&nbsp;to&nbsp;new.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-response"><strong>response</strong></a>(self, code, **kw)</dt><dd><tt>(code,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-response">response</a>(code)<br>
-Return&nbsp;data&nbsp;for&nbsp;response&nbsp;'code'&nbsp;if&nbsp;received,&nbsp;or&nbsp;None.<br>
-Old&nbsp;value&nbsp;for&nbsp;response&nbsp;'code'&nbsp;is&nbsp;cleared.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-search"><strong>search</strong></a>(self, charset, *criteria, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-search">search</a>(charset,&nbsp;criterion,&nbsp;...)<br>
-Search&nbsp;mailbox&nbsp;for&nbsp;matching&nbsp;messages.<br>
-If&nbsp;UTF8&nbsp;is&nbsp;enabled,&nbsp;charset&nbsp;MUST&nbsp;be&nbsp;None.<br>
-'data'&nbsp;is&nbsp;space&nbsp;separated&nbsp;list&nbsp;of&nbsp;matching&nbsp;message&nbsp;numbers.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-select"><strong>select</strong></a>(self, mailbox='INBOX', readonly=False, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-select">select</a>(mailbox='INBOX',&nbsp;readonly=False)<br>
-Select&nbsp;a&nbsp;mailbox.&nbsp;(Flushes&nbsp;all&nbsp;untagged&nbsp;responses.)<br>
-'data'&nbsp;is&nbsp;count&nbsp;of&nbsp;messages&nbsp;in&nbsp;mailbox&nbsp;('EXISTS'&nbsp;response).<br>
-Mandated&nbsp;responses&nbsp;are&nbsp;('FLAGS',&nbsp;'EXISTS',&nbsp;'RECENT',&nbsp;'UIDVALIDITY'),&nbsp;so<br>
-other&nbsp;responses&nbsp;should&nbsp;be&nbsp;obtained&nbsp;via&nbsp;"<a href="#IMAP4_stream-response">response</a>('FLAGS')"&nbsp;etc.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-setacl"><strong>setacl</strong></a>(self, mailbox, who, what, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-setacl">setacl</a>(mailbox,&nbsp;who,&nbsp;what)<br>
-Set&nbsp;a&nbsp;mailbox&nbsp;acl.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-setannotation"><strong>setannotation</strong></a>(self, *args, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-setannotation">setannotation</a>(mailbox[,&nbsp;entry,&nbsp;attribute]+)<br>
-Set&nbsp;ANNOTATIONs.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-setquota"><strong>setquota</strong></a>(self, root, limits, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-setquota">setquota</a>(root,&nbsp;limits)<br>
-Set&nbsp;the&nbsp;quota&nbsp;root's&nbsp;resource&nbsp;limits.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-socket"><strong>socket</strong></a>(self)</dt><dd><tt>socket&nbsp;=&nbsp;<a href="#IMAP4_stream-socket">socket</a>()<br>
-Return&nbsp;socket&nbsp;instance&nbsp;used&nbsp;to&nbsp;connect&nbsp;to&nbsp;<a href="#IMAP4">IMAP4</a>&nbsp;server.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-sort"><strong>sort</strong></a>(self, sort_criteria, charset, *search_criteria, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-sort">sort</a>(sort_criteria,&nbsp;charset,&nbsp;search_criteria,&nbsp;...)<br>
-IMAP4rev1&nbsp;extension&nbsp;SORT&nbsp;command.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-ssl_wrap_socket"><strong>ssl_wrap_socket</strong></a>(self)</dt></dl>
-
-<dl><dt><a name="IMAP4_stream-start_compressing"><strong>start_compressing</strong></a>(self)</dt><dd><tt><a href="#IMAP4_stream-start_compressing">start_compressing</a>()<br>
-Enable&nbsp;deflate&nbsp;compression&nbsp;on&nbsp;the&nbsp;socket&nbsp;(<a href="http://www.rfc-editor.org/rfc/rfc4978.txt">RFC&nbsp;4978</a>).</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-starttls"><strong>starttls</strong></a>(self, keyfile=None, certfile=None, ca_certs=None, cert_verify_cb=None, ssl_version='ssl23', tls_level='tls_compat', **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-starttls">starttls</a>(keyfile=None,&nbsp;certfile=None,&nbsp;ca_certs=None,&nbsp;cert_verify_cb=None,&nbsp;ssl_version="ssl23",&nbsp;tls_level="tls_compat")<br>
-Start&nbsp;TLS&nbsp;negotiation&nbsp;as&nbsp;per&nbsp;<a href="http://www.rfc-editor.org/rfc/rfc2595.txt">RFC&nbsp;2595</a>.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-status"><strong>status</strong></a>(self, mailbox, names, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-status">status</a>(mailbox,&nbsp;names)<br>
-Request&nbsp;named&nbsp;status&nbsp;conditions&nbsp;for&nbsp;mailbox.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-store"><strong>store</strong></a>(self, message_set, command, flags, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-store">store</a>(message_set,&nbsp;command,&nbsp;flags)<br>
-Alters&nbsp;flag&nbsp;dispositions&nbsp;for&nbsp;messages&nbsp;in&nbsp;mailbox.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-subscribe"><strong>subscribe</strong></a>(self, mailbox, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-subscribe">subscribe</a>(mailbox)<br>
-Subscribe&nbsp;to&nbsp;new&nbsp;mailbox.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-thread"><strong>thread</strong></a>(self, threading_algorithm, charset, *search_criteria, **kw)</dt><dd><tt>(type,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-thread">thread</a>(threading_alogrithm,&nbsp;charset,&nbsp;search_criteria,&nbsp;...)<br>
-IMAPrev1&nbsp;extension&nbsp;THREAD&nbsp;command.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-uid"><strong>uid</strong></a>(self, command, *args, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-uid">uid</a>(command,&nbsp;arg,&nbsp;...)<br>
-Execute&nbsp;"command&nbsp;arg&nbsp;..."&nbsp;with&nbsp;messages&nbsp;identified&nbsp;by&nbsp;UID,<br>
-&nbsp;&nbsp;&nbsp;&nbsp;rather&nbsp;than&nbsp;message&nbsp;number.<br>
-Assumes&nbsp;'command'&nbsp;is&nbsp;legal&nbsp;in&nbsp;current&nbsp;state.<br>
-Returns&nbsp;response&nbsp;appropriate&nbsp;to&nbsp;'command'.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-unsubscribe"><strong>unsubscribe</strong></a>(self, mailbox, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-unsubscribe">unsubscribe</a>(mailbox)<br>
-Unsubscribe&nbsp;from&nbsp;old&nbsp;mailbox.</tt></dd></dl>
-
-<dl><dt><a name="IMAP4_stream-xatom"><strong>xatom</strong></a>(self, name, *args, **kw)</dt><dd><tt>(typ,&nbsp;[data])&nbsp;=&nbsp;<a href="#IMAP4_stream-xatom">xatom</a>(name,&nbsp;arg,&nbsp;...)<br>
-Allow&nbsp;simple&nbsp;extension&nbsp;commands&nbsp;notified&nbsp;by&nbsp;server&nbsp;in&nbsp;CAPABILITY&nbsp;response.<br>
-Assumes&nbsp;extension&nbsp;command&nbsp;'name'&nbsp;is&nbsp;legal&nbsp;in&nbsp;current&nbsp;state.<br>
-Returns&nbsp;response&nbsp;appropriate&nbsp;to&nbsp;extension&nbsp;command&nbsp;'name'.</tt></dd></dl>
-
-<hr>
-Data descriptors inherited from <a href="pailhawk.resources.imaplib2.html#IMAP4">IMAP4</a>:<br>
-<dl><dt><strong>__dict__</strong></dt>
-<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
-</dl>
-<dl><dt><strong>__weakref__</strong></dt>
-<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
-</dl>
-<hr>
-Data and other attributes inherited from <a href="pailhawk.resources.imaplib2.html#IMAP4">IMAP4</a>:<br>
-<dl><dt><strong>abort</strong> = &lt;class 'pailhawk.resources.imaplib2.IMAP4.abort'&gt;</dl>
-
-<dl><dt><strong>continuation_cre</strong> = re.compile(b'\\+( (?P&lt;data&gt;.*))?')</dl>
-
-<dl><dt><strong>error</strong> = &lt;class 'pailhawk.resources.imaplib2.IMAP4.error'&gt;</dl>
-
-<dl><dt><strong>mapCRLF_cre</strong> = re.compile(b'\\r\\n|\\r|\\n')</dl>
-
-<dl><dt><strong>readonly</strong> = &lt;class 'pailhawk.resources.imaplib2.IMAP4.readonly'&gt;</dl>
-
-<dl><dt><strong>response_code_cre</strong> = re.compile(b'\\[(?P&lt;type&gt;[A-Z-]+)( (?P&lt;data&gt;[^\\]]*))?\\]')</dl>
-
-<dl><dt><strong>untagged_response_cre</strong> = re.compile(b'\\* (?P&lt;type&gt;[A-Z-]+)( (?P&lt;data&gt;.*))?')</dl>
-
-</td></tr></table></td></tr></table><p>
-<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
-<tr bgcolor="#eeaa77">
-<td colspan=3 valign=bottom>&nbsp;<br>
-<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
-    
-<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><dl><dt><a name="-Internaldate2Time"><strong>Internaldate2Time</strong></a>(resp)</dt><dd><tt>time_tuple&nbsp;=&nbsp;<a href="#-Internaldate2Time">Internaldate2Time</a>(resp)<br>
-&nbsp;<br>
-Parse&nbsp;an&nbsp;<a href="#IMAP4">IMAP4</a>&nbsp;INTERNALDATE&nbsp;string.<br>
-&nbsp;<br>
-Return&nbsp;corresponding&nbsp;local&nbsp;time.&nbsp;&nbsp;The&nbsp;return&nbsp;value&nbsp;is&nbsp;a<br>
-time.struct_time&nbsp;instance&nbsp;or&nbsp;None&nbsp;if&nbsp;the&nbsp;string&nbsp;has&nbsp;wrong&nbsp;format.</tt></dd></dl>
- <dl><dt><a name="-ParseFlags"><strong>ParseFlags</strong></a>(resp)</dt><dd><tt>('flag',&nbsp;...)&nbsp;=&nbsp;<a href="#-ParseFlags">ParseFlags</a>(line)<br>
-Convert&nbsp;<a href="#IMAP4">IMAP4</a>&nbsp;flags&nbsp;response&nbsp;to&nbsp;python&nbsp;tuple.</tt></dd></dl>
- <dl><dt><a name="-Time2Internaldate"><strong>Time2Internaldate</strong></a>(date_time)</dt><dd><tt>'"DD-Mmm-YYYY&nbsp;HH:MM:SS&nbsp;+HHMM"'&nbsp;=&nbsp;<a href="#-Time2Internaldate">Time2Internaldate</a>(date_time)<br>
-&nbsp;<br>
-Convert&nbsp;'date_time'&nbsp;to&nbsp;<a href="#IMAP4">IMAP4</a>&nbsp;INTERNALDATE&nbsp;representation.<br>
-&nbsp;<br>
-The&nbsp;date_time&nbsp;argument&nbsp;can&nbsp;be&nbsp;a&nbsp;number&nbsp;(int&nbsp;or&nbsp;float)&nbsp;representing<br>
-seconds&nbsp;since&nbsp;epoch&nbsp;(as&nbsp;returned&nbsp;by&nbsp;time.time()),&nbsp;a&nbsp;9-tuple<br>
-representing&nbsp;local&nbsp;time,&nbsp;an&nbsp;instance&nbsp;of&nbsp;time.struct_time&nbsp;(as<br>
-returned&nbsp;by&nbsp;time.localtime()),&nbsp;an&nbsp;aware&nbsp;datetime&nbsp;instance&nbsp;or&nbsp;a<br>
-double-quoted&nbsp;string.&nbsp;&nbsp;In&nbsp;the&nbsp;last&nbsp;case,&nbsp;it&nbsp;is&nbsp;assumed&nbsp;to&nbsp;already<br>
-be&nbsp;in&nbsp;the&nbsp;correct&nbsp;format.</tt></dd></dl>
-</td></tr></table><p>
-<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
-<tr bgcolor="#55aa55">
-<td colspan=3 valign=bottom>&nbsp;<br>
-<font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
-    
-<tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><strong>InternalDate</strong> = re.compile(b'.*INTERNALDATE "(?P&lt;day&gt;[ 0123][0-9...-9]) (?P&lt;zonen&gt;[-+])(?P&lt;zoneh&gt;[0-9][0-9])(?P&lt;zon)<br>
-<strong>Mon2num</strong> = {b'Apr': 4, b'Aug': 8, b'Dec': 12, b'Feb': 2, b'Jan': 1, b'Jul': 7, b'Jun': 6, b'Mar': 3, b'May': 5, b'Nov': 11, ...}<br>
-<strong>MonthNames</strong> = [None, 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']<br>
-<strong>__URL__</strong> = 'http://imaplib2.sourceforge.net'<br>
-<strong>__all__</strong> = ('IMAP4', 'IMAP4_SSL', 'IMAP4_stream', 'Internaldate2Time', 'ParseFlags', 'Time2Internaldate', 'Mon2num', 'MonthNames', 'InternalDate')<br>
-<strong>__license__</strong> = 'Python License'<br>
-<strong>__release__</strong> = '3'<br>
-<strong>__revision__</strong> = '05'</td></tr></table><p>
-<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
-<tr bgcolor="#7799ee">
-<td colspan=3 valign=bottom>&nbsp;<br>
-<font color="#ffffff" face="helvetica, arial"><big><strong>Author</strong></big></font></td></tr>
-    
-<tr><td bgcolor="#7799ee"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%">Piers&nbsp;Lauder&nbsp;&lt;piers@janeelix.com&gt;</td></tr></table><p>
-<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
-<tr bgcolor="#7799ee">
-<td colspan=3 valign=bottom>&nbsp;<br>
-<font color="#ffffff" face="helvetica, arial"><big><strong>Credits</strong></big></font></td></tr>
-    
-<tr><td bgcolor="#7799ee"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><br>
-Authentication&nbsp;code&nbsp;contributed&nbsp;by&nbsp;Donn&nbsp;Cave&nbsp;&lt;donn@u.washington.edu&gt;&nbsp;June&nbsp;1998.<br>
-String&nbsp;method&nbsp;conversion&nbsp;by&nbsp;ESR,&nbsp;February&nbsp;2001.<br>
-GET/SETACL&nbsp;contributed&nbsp;by&nbsp;Anthony&nbsp;Baxter&nbsp;&lt;anthony@interlink.com.au&gt;&nbsp;April&nbsp;2001.<br>
-IMAP4_SSL&nbsp;contributed&nbsp;by&nbsp;Tino&nbsp;Lange&nbsp;&lt;Tino.Lange@isg.de&gt;&nbsp;March&nbsp;2002.<br>
-GET/SETQUOTA&nbsp;contributed&nbsp;by&nbsp;Andreas&nbsp;Zeidler&nbsp;&lt;az@kreativkombinat.de&gt;&nbsp;June&nbsp;2002.<br>
-PROXYAUTH&nbsp;contributed&nbsp;by&nbsp;Rick&nbsp;Holbert&nbsp;&lt;holbert.13@osu.edu&gt;&nbsp;November&nbsp;2002.<br>
-IDLE&nbsp;via&nbsp;threads&nbsp;suggested&nbsp;by&nbsp;Philippe&nbsp;Normand&nbsp;&lt;phil@respyre.org&gt;&nbsp;January&nbsp;2005.<br>
-GET/SETANNOTATION&nbsp;contributed&nbsp;by&nbsp;Tomas&nbsp;Lindroos&nbsp;&lt;skitta@abo.fi&gt;&nbsp;June&nbsp;2005.<br>
-COMPRESS/DEFLATE&nbsp;contributed&nbsp;by&nbsp;Bron&nbsp;Gondwana&nbsp;&lt;brong@brong.net&gt;&nbsp;May&nbsp;2009.<br>
-STARTTLS&nbsp;from&nbsp;Jython's&nbsp;imaplib&nbsp;by&nbsp;Alan&nbsp;Kennedy.<br>
-ID&nbsp;contributed&nbsp;by&nbsp;Dave&nbsp;Baggett&nbsp;&lt;dave@baggett.org&gt;&nbsp;November&nbsp;2009.<br>
-Improved&nbsp;untagged&nbsp;responses&nbsp;handling&nbsp;suggested&nbsp;by&nbsp;Dave&nbsp;Baggett&nbsp;&lt;dave@baggett.org&gt;&nbsp;November&nbsp;2009.<br>
-Improved&nbsp;thread&nbsp;naming,&nbsp;and&nbsp;0&nbsp;read&nbsp;detection&nbsp;contributed&nbsp;by&nbsp;Grant&nbsp;Edwards&nbsp;&lt;grant.b.edwards@gmail.com&gt;&nbsp;June&nbsp;2010.<br>
-Improved&nbsp;timeout&nbsp;handling&nbsp;contributed&nbsp;by&nbsp;Ivan&nbsp;Vovnenko&nbsp;&lt;ivovnenko@gmail.com&gt;&nbsp;October&nbsp;2010.<br>
-Timeout&nbsp;handling&nbsp;further&nbsp;improved&nbsp;by&nbsp;Ethan&nbsp;Glasser-Camp&nbsp;&lt;glasse@cs.rpi.edu&gt;&nbsp;December&nbsp;2010.<br>
-Time2Internaldate()&nbsp;patch&nbsp;to&nbsp;match&nbsp;<a href="http://www.rfc-editor.org/rfc/rfc2060.txt">RFC2060</a>&nbsp;specification&nbsp;of&nbsp;English&nbsp;month&nbsp;names&nbsp;from&nbsp;bugs.python.org/issue11024&nbsp;March&nbsp;2011.<br>
-starttls()&nbsp;bug&nbsp;fixed&nbsp;with&nbsp;the&nbsp;help&nbsp;of&nbsp;Sebastian&nbsp;Spaeth&nbsp;&lt;sebastian@sspaeth.de&gt;&nbsp;April&nbsp;2011.<br>
-Threads&nbsp;now&nbsp;set&nbsp;the&nbsp;"daemon"&nbsp;flag&nbsp;(suggested&nbsp;by&nbsp;offlineimap-project)&nbsp;April&nbsp;2011.<br>
-Single&nbsp;quoting&nbsp;introduced&nbsp;with&nbsp;the&nbsp;help&nbsp;of&nbsp;Vladimir&nbsp;Marek&nbsp;&lt;vladimir.marek@oracle.com&gt;&nbsp;August&nbsp;2011.<br>
-Support&nbsp;for&nbsp;specifying&nbsp;SSL&nbsp;version&nbsp;by&nbsp;Ryan&nbsp;Kavanagh&nbsp;&lt;rak@debian.org&gt;&nbsp;July&nbsp;2013.<br>
-Fix&nbsp;for&nbsp;gmail&nbsp;"read&nbsp;0"&nbsp;error&nbsp;provided&nbsp;by&nbsp;Jim&nbsp;Greenleaf&nbsp;&lt;james.a.greenleaf@gmail.com&gt;&nbsp;August&nbsp;2013.<br>
-Fix&nbsp;for&nbsp;offlineimap&nbsp;"indexerror:&nbsp;string&nbsp;index&nbsp;out&nbsp;of&nbsp;range"&nbsp;bug&nbsp;provided&nbsp;by&nbsp;Eygene&nbsp;Ryabinkin&nbsp;&lt;rea@codelabs.ru&gt;&nbsp;August&nbsp;2013.<br>
-Fix&nbsp;for&nbsp;missing&nbsp;idle_lock&nbsp;in&nbsp;_handler()&nbsp;provided&nbsp;by&nbsp;Franklin&nbsp;Brook&nbsp;&lt;franklin@brook.se&gt;&nbsp;August&nbsp;2014.<br>
-Conversion&nbsp;to&nbsp;Python3&nbsp;provided&nbsp;by&nbsp;F.&nbsp;Malina&nbsp;&lt;fmalina@gmail.com&gt;&nbsp;February&nbsp;2015.<br>
-Fix&nbsp;for&nbsp;READ-ONLY&nbsp;error&nbsp;from&nbsp;multiple&nbsp;EXAMINE/SELECT&nbsp;calls&nbsp;by&nbsp;Pierre-Louis&nbsp;Bonicoli&nbsp;&lt;pierre-louis.bonicoli@gmx.fr&gt;&nbsp;March&nbsp;2015.<br>
-Fix&nbsp;for&nbsp;null&nbsp;strings&nbsp;appended&nbsp;to&nbsp;untagged&nbsp;responses&nbsp;by&nbsp;Pierre-Louis&nbsp;Bonicoli&nbsp;&lt;pierre-louis.bonicoli@gmx.fr&gt;&nbsp;March&nbsp;2015.<br>
-Fix&nbsp;for&nbsp;correct&nbsp;byte&nbsp;encoding&nbsp;for&nbsp;_CRAM_MD5_AUTH&nbsp;taken&nbsp;from&nbsp;python3.5&nbsp;imaplib.py&nbsp;June&nbsp;2015.<br>
-Fix&nbsp;for&nbsp;correct&nbsp;Python&nbsp;3&nbsp;exception&nbsp;handling&nbsp;by&nbsp;Tobias&nbsp;Brink&nbsp;&lt;tobias.brink@gmail.com&gt;&nbsp;August&nbsp;2015.<br>
-Fix&nbsp;to&nbsp;allow&nbsp;interruptible&nbsp;IDLE&nbsp;command&nbsp;by&nbsp;Tim&nbsp;Peoples&nbsp;&lt;dromedary512@users.sf.net&gt;&nbsp;September&nbsp;2015.<br>
-Add&nbsp;support&nbsp;for&nbsp;TLS&nbsp;levels&nbsp;by&nbsp;Ben&nbsp;Boeckel&nbsp;&lt;mathstuf@gmail.com&gt;&nbsp;September&nbsp;2015.<br>
-Fix&nbsp;for&nbsp;shutown&nbsp;exception&nbsp;by&nbsp;Sebastien&nbsp;Gross&nbsp;&lt;seb@chezwam.org&gt;&nbsp;November&nbsp;2015.</td></tr></table>
-</body></html>
+</p>
+</DD>
+
+<br>
+<DT><code>status</code>(<I>mailbox, names</I>)</DT>
+<DD>Request named status conditions for mailbox.</DD>
+
+<br>
+<DT><code>store</code>(<I>message_set, command, flag_list</I>)</DT>
+<DD>Alters flag dispositions for messages in mailbox.</DD>
+
+<br>
+<DT><code>subscribe</code>(<I>mailbox</I>)</DT>
+<DD>Subscribe to new mailbox.</DD>
+
+<br>
+<DT><code>thread</code>(<I>threading_algorithm, charset, search_criteria, ...</I>)</DT>
+<DD><small>IMAP4</small>rev1 extension <small>THREAD</small> command.</DD>
+
+<br>
+<DT><code>uid</code>(<I>command, arg, ...</I>)</DT>
+<DD>Execute <code>command arg ...</code> with messages identified by UID,
+rather than message number.
+Returns response appropriate to <I>command</I>.</DD>
+
+<br>
+<DT><code>unsubscribe</code>(<I>mailbox</I>)</DT>
+<DD>Unsubscribe from old mailbox.</DD>
+
+<br>
+<DT><code>xatom</code>(<I>command, arg, ...</I>)</DT>
+<DD>Allow simple extension commands as
+notified by server in <small>CAPABILITY</small> response.
+Returns response appropriate to <I>command</I>.</DD>
+
+</DL>
+
+<p><code>IMAP4</code> instances have a variable, <code>PROTOCOL_VERSION</code>,
+that is set to the most recent supported protocol in the <small>CAPABILITY</small> response.</p>
+
+<H5>Usage</H5>
+
+<p>Here is a minimal example (without error checking) that opens a mailbox
+and retrieves and prints all messages:</p>
+<PRE>
+	def cb(cb_arg_list):
+		response, cb_arg, error = cb_arg_list
+		typ, data = response
+		if not data:
+			return
+		for field in data:
+			if type(field) is not tuple:
+				continue
+			print('Message %s:\n%s\n'
+				% (field[0].split()[0], field[1]))
+
+	import getpass, imaplib2
+	M = imaplib2.IMAP4()
+	M.LOGIN(getpass.getuser(), getpass.getpass())
+	M.SELECT(readonly=True)
+	typ, data = M.SEARCH(None, 'ALL')
+	for num in data[0].split():
+		M.FETCH(num, '(RFC822)', callback=cb)
+	M.CLOSE()
+	M.LOGOUT()
+</PRE>
+
+<p>Note that <small>IMAP4</small> message numbers change as the mailbox changes,
+so it is highly advisable to use <small>UID</small>s instead via the <code>UID</code> command.</p>
+
+<p>At the end of the module,
+there is a test section that contains a more extensive example of usage.</p>
+
+<H5>References</H5>
+
+<p>Documents describing the protocol,
+and sources and binaries for servers implementing it,
+can all be found at
+<A HREF="http://www.washington.edu/imap">
+http://www.washington.edu/imap</A>.</p>
+
+</BODY>
+
+</HTML>
